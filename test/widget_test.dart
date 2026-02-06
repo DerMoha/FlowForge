@@ -7,10 +7,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flowforge/main.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
   testWidgets('renders tabs and can switch to focus mode', (
     WidgetTester tester,
   ) async {
@@ -100,6 +105,52 @@ void main() {
 
     await tester.ensureVisible(find.text('Focus Activity'));
     expect(find.text('Focus Activity'), findsOneWidget);
+  });
+
+  testWidgets('todo list keeps one active focus and queues the rest', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const FlowForgeApp());
+
+    final todoInput = find.byKey(const ValueKey<String>('todo-input'));
+
+    await tester.enterText(todoInput, 'Write release notes draft');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(todoInput, 'Send follow-up email');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Now Focusing'), findsOneWidget);
+    expect(find.text('Queue (1)'), findsOneWidget);
+  });
+
+  testWidgets('completed todos move into the finished section', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const FlowForgeApp());
+
+    final todoInput = find.byKey(const ValueKey<String>('todo-input'));
+
+    await tester.enterText(todoInput, 'Wrap onboarding checklist');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    final completedCheckbox = find.byType(Checkbox).last;
+    await tester.ensureVisible(completedCheckbox);
+    await tester.tap(completedCheckbox);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Finished (1)'), findsOneWidget);
+    expect(find.text('Wrap onboarding checklist'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('toggle-finished-todos')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Wrap onboarding checklist'), findsOneWidget);
   });
 
   testWidgets('reset focus button asks for confirmation', (

@@ -16,7 +16,8 @@ class FlowForgeHome extends StatefulWidget {
   State<FlowForgeHome> createState() => _FlowForgeHomeState();
 }
 
-class _FlowForgeHomeState extends State<FlowForgeHome> {
+class _FlowForgeHomeState extends State<FlowForgeHome>
+    with WidgetsBindingObserver {
   static const String _stateKey = 'flowforge_state_v1';
   static const EdgeInsets _pagePadding = EdgeInsets.fromLTRB(20, 6, 20, 130);
   static const double _sectionGap = 14;
@@ -71,6 +72,9 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
 
   int _tabIndex = 0;
   bool _isRunning = false;
+  int? _sessionEndEpochMs;
+  String? _focusedTodoId;
+  bool _showFinishedTodos = false;
   String _shutdownNote = '';
   List<SessionLog> _logs = <SessionLog>[];
   List<TodoItem> _todos = <TodoItem>[];
@@ -80,6 +84,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _taskDone = List<bool>.filled(3, false);
     _energy = 65;
     _focusMinutes = 45;
@@ -106,6 +111,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
     _saveDebounce?.cancel();
     for (final controller in _taskControllers) {
@@ -116,6 +122,21 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     _tomorrowController.dispose();
     _todoInputController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncTimerWithWallClock(isAppResume: true);
+      _ensureTickerRunning();
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _queueSave();
+    }
   }
 
   Future<void> _loadState() async {
@@ -135,6 +156,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     if (!mounted) {
       return;
     }
+
+    var completedWhileAway = false;
 
     setState(() {
       final rawEnergy = payload['energy'];
@@ -170,14 +193,15 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
       if (rawFocus is int && _minutePresets.contains(rawFocus)) {
         _focusMinutes = rawFocus;
       }
+      final fullSessionSeconds = _focusMinutes * 60;
 
       final rawRemaining = payload['remaining_seconds'];
       if (rawRemaining is int &&
           rawRemaining > 0 &&
-          rawRemaining <= _focusMinutes * 60) {
+          rawRemaining <= fullSessionSeconds) {
         _remainingSeconds = rawRemaining;
       } else {
-        _remainingSeconds = _focusMinutes * 60;
+        _remainingSeconds = fullSessionSeconds;
       }
 
       final rawWin = payload['win'];
@@ -199,7 +223,49 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
 
       _logs = _decodeLogs(payload['logs']);
       _todos = _decodeTodos(payload['todos']);
+      _showFinishedTodos = payload['show_finished_todos'] == true;
+
+      final savedFocusTodoId = payload['focused_todo_id'];
+      _focusedTodoId = _pickFocusedTodoId(
+        _todos,
+        preferredId: savedFocusTodoId is String ? savedFocusTodoId : null,
+      );
+
+      _isRunning = payload['is_running'] == true;
+      final rawSessionEndEpochMs = payload['session_end_epoch_ms'];
+      _sessionEndEpochMs = rawSessionEndEpochMs is int
+          ? rawSessionEndEpochMs
+          : null;
+
+      if (_isRunning && _sessionEndEpochMs != null) {
+        final remainingFromDeadline =
+            ((_sessionEndEpochMs! - DateTime.now().millisecondsSinceEpoch) /
+                    1000)
+                .ceil();
+        if (remainingFromDeadline > 0) {
+          _remainingSeconds = min(fullSessionSeconds, remainingFromDeadline);
+        } else {
+          _isRunning = false;
+          _sessionEndEpochMs = null;
+          _remainingSeconds = fullSessionSeconds;
+          _logs = <SessionLog>[
+            SessionLog(completedAt: DateTime.now(), minutes: _focusMinutes),
+            ..._logs,
+          ].take(_maxSessionLogs).toList();
+          completedWhileAway = true;
+        }
+      } else {
+        _isRunning = false;
+        _sessionEndEpochMs = null;
+      }
     });
+
+    _ensureTickerRunning();
+
+    if (completedWhileAway) {
+      _queueSave();
+      _showSnack('Focus session finished while you were away. Session logged.');
+    }
   }
 
   List<SessionLog> _decodeLogs(Object? rawLogs) {
@@ -252,10 +318,14 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
       'task_done': _taskDone,
       'focus_minutes': _focusMinutes,
       'remaining_seconds': _remainingSeconds,
+      'is_running': _isRunning,
+      'session_end_epoch_ms': _sessionEndEpochMs,
       'win': _winController.text,
       'friction': _frictionController.text,
       'tomorrow': _tomorrowController.text,
       'shutdown_note': _shutdownNote,
+      'focused_todo_id': _focusedTodoId,
+      'show_finished_todos': _showFinishedTodos,
       'logs': _logs.map((log) => log.toJson()).toList(),
       'todos': _todos.map((todo) => todo.toJson()).toList(),
     };
@@ -265,6 +335,16 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   void _queueSave() {
     _saveDebounce?.cancel();
     _saveDebounce = Timer(const Duration(milliseconds: 300), _saveState);
+  }
+
+  void _showSnack(String message) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) {
+      return;
+    }
+    messenger.showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   void _toggleTimer() {
@@ -286,30 +366,87 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
 
     setState(() {
       _isRunning = true;
+      _sessionEndEpochMs =
+          DateTime.now().millisecondsSinceEpoch + (_remainingSeconds * 1000);
     });
+    _ensureTickerRunning();
+    _queueSave();
+  }
+
+  void _ensureTickerRunning() {
+    _ticker?.cancel();
+    if (!_isRunning) {
+      return;
+    }
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
+      if (!mounted || !_isRunning) {
         timer.cancel();
         return;
       }
 
-      if (_remainingSeconds <= 1) {
+      final completed = _syncTimerWithWallClock();
+      if (completed) {
         timer.cancel();
-        _handleSessionComplete();
-        return;
       }
-
-      setState(() {
-        _remainingSeconds -= 1;
-      });
     });
   }
 
+  bool _syncTimerWithWallClock({bool isAppResume = false}) {
+    if (!_isRunning) {
+      return false;
+    }
+
+    final endEpochMs = _sessionEndEpochMs;
+    if (endEpochMs == null) {
+      setState(() {
+        _isRunning = false;
+        _remainingSeconds = _focusMinutes * 60;
+      });
+      _queueSave();
+      return false;
+    }
+
+    final fullSessionSeconds = _focusMinutes * 60;
+    final remainingSeconds =
+        ((endEpochMs - DateTime.now().millisecondsSinceEpoch) / 1000).ceil();
+    if (remainingSeconds <= 0) {
+      _handleSessionComplete(fromResume: isAppResume);
+      return true;
+    }
+
+    final clamped = min(fullSessionSeconds, remainingSeconds);
+    if (_remainingSeconds != clamped) {
+      setState(() {
+        _remainingSeconds = clamped;
+      });
+    }
+
+    return false;
+  }
+
   void _pauseTimer() {
+    if (!_isRunning) {
+      return;
+    }
+
+    final endEpochMs = _sessionEndEpochMs;
+    var pausedRemaining = _remainingSeconds;
+    if (endEpochMs != null) {
+      final fromDeadline =
+          ((endEpochMs - DateTime.now().millisecondsSinceEpoch) / 1000).ceil();
+      if (fromDeadline <= 0) {
+        _handleSessionComplete();
+        return;
+      }
+      pausedRemaining = min(_focusMinutes * 60, fromDeadline);
+    }
+
     _ticker?.cancel();
     setState(() {
       _isRunning = false;
+      _sessionEndEpochMs = null;
+      _remainingSeconds = pausedRemaining;
     });
     _queueSave();
   }
@@ -318,6 +455,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     _ticker?.cancel();
     setState(() {
       _isRunning = false;
+      _sessionEndEpochMs = null;
       _remainingSeconds = _focusMinutes * 60;
     });
     _queueSave();
@@ -358,10 +496,11 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     }
   }
 
-  void _handleSessionComplete() {
+  void _handleSessionComplete({bool fromResume = false}) {
     _ticker?.cancel();
     setState(() {
       _isRunning = false;
+      _sessionEndEpochMs = null;
       _remainingSeconds = _focusMinutes * 60;
       _logs = <SessionLog>[
         SessionLog(completedAt: DateTime.now(), minutes: _focusMinutes),
@@ -370,11 +509,10 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     });
     _queueSave();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Session complete. Logged $_focusMinutes minutes.'),
-        behavior: SnackBarBehavior.floating,
-      ),
+    _showSnack(
+      fromResume
+          ? 'Session completed while you were away. Logged $_focusMinutes minutes.'
+          : 'Session complete. Logged $_focusMinutes minutes.',
     );
   }
 
@@ -386,6 +524,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     setState(() {
       _focusMinutes = minutes;
       _remainingSeconds = minutes * 60;
+      _focusedTodoId = _pickFocusedTodoId(_todos, preferredId: _focusedTodoId);
     });
     _queueSave();
   }
@@ -406,6 +545,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
         _focusMinutes = recommendedFocus;
         _remainingSeconds = recommendedFocus * 60;
       }
+      _focusedTodoId = _pickFocusedTodoId(_todos, preferredId: _focusedTodoId);
     });
     _queueSave();
   }
@@ -449,8 +589,27 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     );
 
     setState(() {
-      _todos = <TodoItem>[..._todos, item];
+      final updatedTodos = <TodoItem>[..._todos, item];
+      _todos = updatedTodos;
+      _focusedTodoId = _pickFocusedTodoId(
+        updatedTodos,
+        preferredId: _focusedTodoId ?? item.id,
+      );
       _todoInputController.clear();
+    });
+    _queueSave();
+  }
+
+  void _setFocusedTodo(String id) {
+    if (_focusedTodoId == id) {
+      return;
+    }
+    if (!_todos.any((todo) => todo.id == id && !todo.isDone)) {
+      return;
+    }
+
+    setState(() {
+      _focusedTodoId = id;
     });
     _queueSave();
   }
@@ -461,16 +620,35 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
       return;
     }
 
+    final existing = _todos[index];
+    if (existing.isDone == value) {
+      return;
+    }
+
     setState(() {
-      final updated = _todos[index].copyWith(isDone: value);
-      _todos = List<TodoItem>.from(_todos)..[index] = updated;
+      final updated = existing.copyWith(isDone: value);
+      final updatedTodos = List<TodoItem>.from(_todos)..[index] = updated;
+      _todos = updatedTodos;
+
+      final preferredId = value
+          ? (_focusedTodoId == id ? null : _focusedTodoId)
+          : id;
+      _focusedTodoId = _pickFocusedTodoId(
+        updatedTodos,
+        preferredId: preferredId,
+      );
     });
     _queueSave();
   }
 
   void _deleteTodo(String id) {
     setState(() {
-      _todos = _todos.where((todo) => todo.id != id).toList();
+      final updatedTodos = _todos.where((todo) => todo.id != id).toList();
+      _todos = updatedTodos;
+      _focusedTodoId = _pickFocusedTodoId(
+        updatedTodos,
+        preferredId: _focusedTodoId == id ? null : _focusedTodoId,
+      );
     });
     _queueSave();
   }
@@ -480,7 +658,13 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
       return;
     }
     setState(() {
-      _todos = _todos.where((todo) => !todo.isDone).toList();
+      final updatedTodos = _todos.where((todo) => !todo.isDone).toList();
+      _todos = updatedTodos;
+      _focusedTodoId = _pickFocusedTodoId(
+        updatedTodos,
+        preferredId: _focusedTodoId,
+      );
+      _showFinishedTodos = false;
     });
     _queueSave();
   }
@@ -518,11 +702,18 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     _ticker?.cancel();
     setState(() {
       _isRunning = false;
+      _sessionEndEpochMs = null;
       _energy = 65;
       _taskDone = List<bool>.filled(3, false);
       _remainingSeconds = _focusMinutes * 60;
       _logs = <SessionLog>[];
-      _todos = _todos.where((todo) => !todo.isDone).toList();
+      final openTodos = _todos.where((todo) => !todo.isDone).toList();
+      _todos = openTodos;
+      _focusedTodoId = _pickFocusedTodoId(
+        openTodos,
+        preferredId: _focusedTodoId,
+      );
+      _showFinishedTodos = false;
       _shutdownNote = '';
       _winController.clear();
       _frictionController.clear();
@@ -532,6 +723,29 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
       _newTodoEstimateMinutes = 25;
     });
     _queueSave();
+  }
+
+  String? _pickFocusedTodoId(List<TodoItem> todos, {String? preferredId}) {
+    final openTodos = todos.where((todo) => !todo.isDone).toList();
+    if (openTodos.isEmpty) {
+      return null;
+    }
+
+    if (preferredId != null &&
+        openTodos.any((todo) => todo.id == preferredId)) {
+      return preferredId;
+    }
+
+    openTodos.sort((a, b) {
+      final scoreCompare = _todoSuitabilityScore(
+        a,
+      ).compareTo(_todoSuitabilityScore(b));
+      if (scoreCompare != 0) {
+        return scoreCompare;
+      }
+      return a.createdAt.compareTo(b.createdAt);
+    });
+    return openTodos.first.id;
   }
 
   int get _momentumScore {
@@ -626,13 +840,65 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   List<TodoItem> get _openTodos =>
       _todos.where((todo) => !todo.isDone).toList(growable: false);
 
-  TodoItem? get _nextBestTodo {
-    if (_openTodos.isEmpty) {
+  List<TodoItem> get _completedTodos {
+    final completed = _todos
+        .where((todo) => todo.isDone)
+        .toList(growable: false);
+    completed.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return completed;
+  }
+
+  TodoItem? get _focusedTodo {
+    final focusedId = _focusedTodoId;
+    if (focusedId == null) {
       return null;
     }
-    final ranked = List<TodoItem>.from(_openTodos)
-      ..sort((a, b) => _todoSuitabilityScore(a) - _todoSuitabilityScore(b));
-    return ranked.first;
+    for (final todo in _openTodos) {
+      if (todo.id == focusedId) {
+        return todo;
+      }
+    }
+    return null;
+  }
+
+  List<TodoItem> get _sortedOpenTodos {
+    final sorted = List<TodoItem>.from(_openTodos)
+      ..sort((a, b) {
+        final aFocused = a.id == _focusedTodoId;
+        final bFocused = b.id == _focusedTodoId;
+        if (aFocused && !bFocused) {
+          return -1;
+        }
+        if (bFocused && !aFocused) {
+          return 1;
+        }
+
+        final scoreCompare = _todoSuitabilityScore(
+          a,
+        ).compareTo(_todoSuitabilityScore(b));
+        if (scoreCompare != 0) {
+          return scoreCompare;
+        }
+        return a.createdAt.compareTo(b.createdAt);
+      });
+    return sorted;
+  }
+
+  List<TodoItem> get _queuedTodos {
+    final focusedId = _focusedTodoId;
+    if (focusedId == null) {
+      return _sortedOpenTodos;
+    }
+    return _sortedOpenTodos
+        .where((todo) => todo.id != focusedId)
+        .toList(growable: false);
+  }
+
+  TodoItem? get _nextBestTodo {
+    if (_sortedOpenTodos.isEmpty) {
+      return null;
+    }
+    return _sortedOpenTodos.first;
   }
 
   int _todoSuitabilityScore(TodoItem todo) {
@@ -1045,6 +1311,10 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   }
 
   Widget _todoPanel() {
+    final focusedTodo = _focusedTodo;
+    final queuedTodos = _queuedTodos;
+    final completedTodos = _completedTodos;
+
     return _panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1059,7 +1329,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               Text(
-                '$_openTodoCount open · ${_todos.length} total',
+                '$_openTodoCount open · $_completedTodoCount finished',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: const Color(0xFF625F58)),
@@ -1148,7 +1418,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
               context,
             ).textTheme.bodySmall?.copyWith(color: const Color(0xFF5F5B55)),
           ),
-          if (_nextBestTodo != null) ...<Widget>[
+          if (focusedTodo == null && _nextBestTodo != null) ...<Widget>[
             const SizedBox(height: 10),
             Container(
               width: double.infinity,
@@ -1179,23 +1449,89 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
               ),
             ),
           ],
-          const SizedBox(height: 10),
-          if (_todos.isEmpty)
+          if (_todos.isEmpty) ...<Widget>[
+            const SizedBox(height: 10),
             Text(
               'Nothing captured yet. Add small tasks here so your Top Three stay clean.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF5E5A54)),
             ),
-          ..._todos.map(_todoRow),
-          if (_completedTodoCount > 0) ...<Widget>[
+          ],
+          if (focusedTodo != null) ...<Widget>[
+            const SizedBox(height: 12),
+            Text(
+              'Now Focusing',
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'One thing at a time. This task stays pinned until you finish it or switch focus.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF57534C)),
+            ),
+            _todoRow(focusedTodo, isFocused: true),
+          ] else if (_openTodoCount > 0) ...<Widget>[
+            const SizedBox(height: 10),
+            Text(
+              'Pick one task to focus. Single-task mode works best when one item is active.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF57534C)),
+            ),
+          ],
+          if (queuedTodos.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 12),
+            Text(
+              'Queue (${queuedTodos.length})',
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            ...queuedTodos.map(_todoRow),
+          ],
+          if (_openTodoCount == 0 && _todos.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 10),
+            Text(
+              'Open list cleared. Great stopping point.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF4E5F53)),
+            ),
+          ],
+          if (completedTodos.isNotEmpty) ...<Widget>[
             const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  'Finished (${completedTodos.length})',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                TextButton(
+                  key: const ValueKey<String>('toggle-finished-todos'),
+                  onPressed: () {
+                    setState(() {
+                      _showFinishedTodos = !_showFinishedTodos;
+                    });
+                    _queueSave();
+                  },
+                  child: Text(_showFinishedTodos ? 'Hide' : 'Show'),
+                ),
+              ],
+            ),
+            if (_showFinishedTodos) ...completedTodos.map(_todoRow),
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 onPressed: _clearCompletedTodos,
                 icon: const Icon(Icons.cleaning_services_outlined),
-                label: Text('Clear completed ($_completedTodoCount)'),
+                label: Text('Clear finished (${completedTodos.length})'),
               ),
             ),
           ],
@@ -1204,24 +1540,36 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     );
   }
 
-  Widget _todoRow(TodoItem todo) {
+  Widget _todoRow(TodoItem todo, {bool isFocused = false}) {
+    final isDone = todo.isDone;
     final energyFits = _isEnergyFit(todo);
     final timeFits = _isTimeFit(todo);
     final fitColor = energyFits && timeFits
         ? const Color(0xFF2E6A4E)
         : const Color(0xFF7B5D2C);
-    return Container(
+    final highlightColor = isDone
+        ? const Color(0xFFE4F3EB)
+        : isFocused
+        ? const Color(0xFFE6F4EE)
+        : const Color(0xFFF3F1EC);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: todo.isDone ? const Color(0xFFE4F3EB) : const Color(0xFFF3F1EC),
+        color: highlightColor,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isFocused ? const Color(0xFF2E7A63) : Colors.transparent,
+          width: 1.2,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Checkbox(
-            value: todo.isDone,
+            value: isDone,
             activeColor: const Color(0xFF1F7A6A),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
@@ -1235,10 +1583,18 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                 Text(
                   todo.title,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    decoration: todo.isDone ? TextDecoration.lineThrough : null,
-                    color: todo.isDone ? const Color(0xFF50785F) : null,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                    color: isDone ? const Color(0xFF50785F) : null,
                   ),
                 ),
+                if (isFocused && !isDone) ...<Widget>[
+                  const SizedBox(height: 4),
+                  _todoTag(
+                    icon: Icons.center_focus_strong_rounded,
+                    text: 'Focused now',
+                    color: const Color(0xFF2E7A63),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Wrap(
                   spacing: 6,
@@ -1258,18 +1614,37 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _todoConstraintHint(todo),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: fitColor),
+                  isDone
+                      ? 'Completed.'
+                      : isFocused
+                      ? 'This is your active task. Tap another open task to switch focus.'
+                      : _todoConstraintHint(todo),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: isDone ? const Color(0xFF4E705B) : fitColor,
+                  ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Delete todo',
-            onPressed: () => _deleteTodo(todo.id),
-            icon: const Icon(Icons.close_rounded),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (!isDone)
+                IconButton(
+                  tooltip: isFocused ? 'Current focus task' : 'Focus this task',
+                  onPressed: isFocused ? null : () => _setFocusedTodo(todo.id),
+                  icon: Icon(
+                    isFocused
+                        ? Icons.center_focus_strong_rounded
+                        : Icons.center_focus_weak_rounded,
+                  ),
+                ),
+              IconButton(
+                tooltip: 'Delete todo',
+                onPressed: () => _deleteTodo(todo.id),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
           ),
         ],
       ),
@@ -1340,6 +1715,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   }
 
   Widget _focusTab() {
+    final focusedTodo = _focusedTodo;
     final totalSeconds = _focusMinutes * 60;
     final completion = (1 - (_remainingSeconds / totalSeconds)).clamp(0.0, 1.0);
 
@@ -1511,6 +1887,60 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                     ),
                   ),
                 ),
+                if (focusedTodo != null) ...<Widget>[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF4EF),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFC4DCCE)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Current target',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          focusedTodo.title,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: <Widget>[
+                            _todoTag(
+                              icon: focusedTodo.energyRequirement.icon,
+                              text:
+                                  '${focusedTodo.energyRequirement.label} energy',
+                              color: focusedTodo.energyRequirement.accent,
+                            ),
+                            _todoTag(
+                              icon: Icons.timer_outlined,
+                              text: '${focusedTodo.estimateMinutes} min',
+                              color: const Color(0xFF3E6287),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (_openTodoCount > 0) ...<Widget>[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Pick one open todo in Today tab so this session has a single target.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF56615A),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
