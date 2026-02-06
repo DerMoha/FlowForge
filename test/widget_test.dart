@@ -59,6 +59,10 @@ void main() {
     final deepChip = find.byKey(const ValueKey<String>('todo-energy-deep'));
     final effortChip = find.byKey(const ValueKey<String>('todo-effort-90'));
 
+    await tester.ensureVisible(todoInput);
+    await tester.tap(todoInput);
+    await tester.pumpAndSettle();
+
     await tester.ensureVisible(deepChip);
     await tester.tap(deepChip);
     await tester.pumpAndSettle();
@@ -74,6 +78,38 @@ void main() {
 
     expect(find.text('Hard architecture refactor'), findsOneWidget);
     expect(find.text('Deep energy'), findsOneWidget);
+  });
+
+  testWidgets('todo add details are collapsed by default', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const FlowForgeApp());
+
+    expect(
+      find.byKey(const ValueKey<String>('todo-energy-deep')),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey<String>('todo-effort-90')), findsNothing);
+  });
+
+  testWidgets('todo input expands detail controls on focus', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const FlowForgeApp());
+
+    final todoInput = find.byKey(const ValueKey<String>('todo-input'));
+    await tester.ensureVisible(todoInput);
+    await tester.tap(todoInput);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('todo-energy-deep')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('todo-effort-90')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('energy presets auto-sync the focus block', (
@@ -107,7 +143,7 @@ void main() {
     expect(find.text('Focus Activity'), findsOneWidget);
   });
 
-  testWidgets('todo list keeps one active focus and queues the rest', (
+  testWidgets('todo list shows top three and rotates remaining tasks', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const FlowForgeApp());
@@ -122,8 +158,23 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    expect(find.text('Now Focusing'), findsOneWidget);
-    expect(find.text('Queue (1)'), findsOneWidget);
+    await tester.enterText(todoInput, 'Review onboarding docs');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(todoInput, 'Schedule planning call');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Top 3'), findsOneWidget);
+    expect(
+      find.text('1 more queued. Finish one and the next appears here.'),
+      findsOneWidget,
+    );
+    expect(find.text('Write release notes draft'), findsOneWidget);
+    expect(find.text('Send follow-up email'), findsOneWidget);
+    expect(find.text('Review onboarding docs'), findsOneWidget);
+    expect(find.text('Schedule planning call'), findsNothing);
   });
 
   testWidgets('completed todos move into the finished section', (

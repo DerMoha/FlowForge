@@ -64,6 +64,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
   final TextEditingController _frictionController = TextEditingController();
   final TextEditingController _tomorrowController = TextEditingController();
   final TextEditingController _todoInputController = TextEditingController();
+  final FocusNode _todoInputFocusNode = FocusNode();
 
   late List<bool> _taskDone;
   late double _energy;
@@ -74,6 +75,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
 
   int _tabIndex = 0;
   bool _isRunning = false;
+  bool _showTodoComposerDetails = false;
+  bool _hasCustomTodoEstimate = false;
   int? _sessionEndEpochMs;
   String? _focusedTodoId;
   bool _showFinishedTodos = false;
@@ -92,7 +95,10 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     _focusMinutes = 45;
     _remainingSeconds = _focusMinutes * 60;
     _newTodoEnergyRequirement = TaskEnergyRequirement.medium;
-    _newTodoEstimateMinutes = 25;
+    _newTodoEstimateMinutes = _estimatedTodoMinutesFor(
+      _newTodoEnergyRequirement,
+    );
+    _todoInputFocusNode.addListener(_handleTodoInputFocusChange);
 
     const defaults = <String>[
       'Ship the hardest task first',
@@ -123,6 +129,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     _frictionController.dispose();
     _tomorrowController.dispose();
     _todoInputController.dispose();
+    _todoInputFocusNode.removeListener(_handleTodoInputFocusChange);
+    _todoInputFocusNode.dispose();
     super.dispose();
   }
 
@@ -547,6 +555,11 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
         _focusMinutes = recommendedFocus;
         _remainingSeconds = recommendedFocus * 60;
       }
+      if (!_hasCustomTodoEstimate) {
+        _newTodoEstimateMinutes = _estimatedTodoMinutesFor(
+          _newTodoEnergyRequirement,
+        );
+      }
       _focusedTodoId = _pickFocusedTodoId(_todos, preferredId: _focusedTodoId);
     });
     _queueSave();
@@ -556,22 +569,90 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     _setEnergy(preset.value.toDouble());
   }
 
-  void _setTaskDone(int index, bool value) {
+  void _handleTodoInputFocusChange() {
+    if (_todoInputFocusNode.hasFocus) {
+      _expandTodoComposer();
+      return;
+    }
+    _collapseTodoComposerIfIdle();
+  }
+
+  void _expandTodoComposer() {
+    final suggested = _estimatedTodoMinutesFor(_newTodoEnergyRequirement);
+    if (_showTodoComposerDetails &&
+        (_hasCustomTodoEstimate || _newTodoEstimateMinutes == suggested)) {
+      return;
+    }
+
     setState(() {
-      _taskDone[index] = value;
+      _showTodoComposerDetails = true;
+      if (!_hasCustomTodoEstimate) {
+        _newTodoEstimateMinutes = suggested;
+      }
     });
-    _queueSave();
+  }
+
+  void _collapseTodoComposerIfIdle() {
+    if (_todoInputFocusNode.hasFocus ||
+        _todoInputController.text.trim().isNotEmpty) {
+      return;
+    }
+    if (!_showTodoComposerDetails) {
+      return;
+    }
+    setState(() {
+      _showTodoComposerDetails = false;
+    });
+  }
+
+  int _estimatedTodoMinutesFor(TaskEnergyRequirement requirement) {
+    final baseMinutes = switch (requirement) {
+      TaskEnergyRequirement.low => 15,
+      TaskEnergyRequirement.medium => 25,
+      TaskEnergyRequirement.high => 45,
+      TaskEnergyRequirement.deep => 60,
+    };
+    final energyGap = max(0, requirement.minEnergy - _currentEnergyScore);
+    final adjusted = baseMinutes + ((energyGap / 20).ceil() * 10);
+    return _nearestTodoEstimatePreset(adjusted);
+  }
+
+  int _nearestTodoEstimatePreset(int targetMinutes) {
+    var closest = _todoEstimatePresets.first;
+    var closestGap = (closest - targetMinutes).abs();
+    for (final preset in _todoEstimatePresets.skip(1)) {
+      final gap = (preset - targetMinutes).abs();
+      if (gap < closestGap) {
+        closest = preset;
+        closestGap = gap;
+      }
+    }
+    return closest;
   }
 
   void _setNewTodoEnergyRequirement(TaskEnergyRequirement requirement) {
+    final suggested = _estimatedTodoMinutesFor(requirement);
     setState(() {
       _newTodoEnergyRequirement = requirement;
+      if (!_hasCustomTodoEstimate) {
+        _newTodoEstimateMinutes = suggested;
+      }
     });
   }
 
   void _setNewTodoEstimateMinutes(int minutes) {
+    final suggested = _estimatedTodoMinutesFor(_newTodoEnergyRequirement);
     setState(() {
       _newTodoEstimateMinutes = minutes;
+      _hasCustomTodoEstimate = minutes != suggested;
+    });
+  }
+
+  void _useSuggestedTodoEstimate() {
+    final suggested = _estimatedTodoMinutesFor(_newTodoEnergyRequirement);
+    setState(() {
+      _newTodoEstimateMinutes = suggested;
+      _hasCustomTodoEstimate = false;
     });
   }
 
@@ -598,7 +679,13 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
         preferredId: _focusedTodoId ?? item.id,
       );
       _todoInputController.clear();
+      _hasCustomTodoEstimate = false;
+      _newTodoEstimateMinutes = _estimatedTodoMinutesFor(
+        _newTodoEnergyRequirement,
+      );
+      _showTodoComposerDetails = false;
     });
+    _todoInputFocusNode.unfocus();
     _queueSave();
   }
 
@@ -672,11 +759,11 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
   }
 
   void _draftShutdownNote() {
-    final completed = _taskDone.where((item) => item).length;
     final sessionsToday = _logs
         .where((log) => _isSameDay(log.completedAt, DateTime.now()))
         .length;
     final todosClosed = _completedTodoCount;
+    final openTodos = _openTodoCount;
     final win = _cleanSummary(
       _winController.text,
       fallback: 'Made progress where it mattered.',
@@ -692,9 +779,9 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
 
     setState(() {
       _shutdownNote =
-          'Closed $completed of ${_taskDone.length} priorities and logged $sessionsToday focus '
-          '${sessionsToday == 1 ? 'session' : 'sessions'}, with $todosClosed todo '
-          '${todosClosed == 1 ? 'done' : 'items done'}. '
+          'Closed $todosClosed todo ${todosClosed == 1 ? 'item' : 'items'} and logged '
+          '$sessionsToday focus ${sessionsToday == 1 ? 'session' : 'sessions'}, '
+          'with $openTodos ${openTodos == 1 ? 'item' : 'items'} still open. '
           'Win: $win Friction: $friction Tomorrow first move: $tomorrow';
     });
     _queueSave();
@@ -721,9 +808,14 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
       _frictionController.clear();
       _tomorrowController.clear();
       _todoInputController.clear();
+      _showTodoComposerDetails = false;
       _newTodoEnergyRequirement = TaskEnergyRequirement.medium;
-      _newTodoEstimateMinutes = 25;
+      _hasCustomTodoEstimate = false;
+      _newTodoEstimateMinutes = _estimatedTodoMinutesFor(
+        _newTodoEnergyRequirement,
+      );
     });
+    _todoInputFocusNode.unfocus();
     _queueSave();
   }
 
@@ -751,8 +843,10 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
   }
 
   int get _momentumScore {
-    final completed = _taskDone.where((item) => item).length;
-    final completionScore = (completed / _taskDone.length) * 40;
+    final totalTodos = _todos.length;
+    final completionScore = totalTodos == 0
+        ? 0
+        : (_completedTodoCount / totalTodos) * 40;
     final energyScore = _energy * 0.25;
     final sessions = _logs
         .where((log) => _isSameDay(log.completedAt, DateTime.now()))
@@ -811,32 +905,6 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
 
   int get _recommendedFocusMinutes => _recommendedFocusMinutesFor(_energy);
 
-  String get _energyGuidance {
-    if (_energy >= 80) {
-      return 'Great window for deep work. Protect one hard 60-minute block.';
-    }
-    if (_energy >= 60) {
-      return 'Solid pace. Aim for a meaningful block and one decisive todo.';
-    }
-    if (_energy >= 40) {
-      return 'Medium fuel. Use shorter sprints and close easy wins first.';
-    }
-    return 'Low battery. Keep scope tight and knock out lightweight tasks.';
-  }
-
-  String get _energyLabel {
-    if (_energy >= 80) {
-      return 'Surging';
-    }
-    if (_energy >= 60) {
-      return 'Steady';
-    }
-    if (_energy >= 40) {
-      return 'Warming up';
-    }
-    return 'Low battery';
-  }
-
   int get _currentEnergyScore => _energy.round();
 
   List<TodoItem> get _openTodos =>
@@ -884,23 +952,6 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
         return a.createdAt.compareTo(b.createdAt);
       });
     return sorted;
-  }
-
-  List<TodoItem> get _queuedTodos {
-    final focusedId = _focusedTodoId;
-    if (focusedId == null) {
-      return _sortedOpenTodos;
-    }
-    return _sortedOpenTodos
-        .where((todo) => todo.id != focusedId)
-        .toList(growable: false);
-  }
-
-  TodoItem? get _nextBestTodo {
-    if (_sortedOpenTodos.isEmpty) {
-      return null;
-    }
-    return _sortedOpenTodos.first;
   }
 
   int _todoSuitabilityScore(TodoItem todo) {
@@ -1119,85 +1170,41 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
         children: <Widget>[
           _panel(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
+                    Icon(
+                      _activeEnergyPreset.icon,
+                      color: _activeEnergyPreset.color,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
                       'Energy',
                       style: _textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    Expanded(child: _energyBatteryStrip()),
+                    const SizedBox(width: 10),
                     Text(
-                      '${_energy.round()}% · $_energyLabel',
-                      style: _textTheme.bodyMedium?.copyWith(
-                        color: _scheme.onSurfaceVariant,
+                      _activeEnergyPreset.label,
+                      style: _textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _energyPresets.map((preset) {
-                    final selected = preset.value == _activeEnergyPreset.value;
-                    return ChoiceChip(
-                      key: ValueKey<String>('energy-preset-${preset.value}'),
-                      tooltip: preset.hint,
-                      selected: selected,
-                      selectedColor: _scheme.primaryContainer,
-                      side: BorderSide(
-                        color: selected
-                            ? _scheme.primary.withValues(alpha: 0.55)
-                            : _scheme.outlineVariant,
-                      ),
-                      avatar: Icon(
-                        preset.icon,
-                        size: 16,
-                        color: selected ? _scheme.primary : _scheme.secondary,
-                      ),
-                      label: Text('${preset.label} ${preset.value}%'),
-                      onSelected: (_) => _setEnergyPreset(preset),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Suggested focus block: $_recommendedFocusMinutes min',
-                  style: _textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _energyGuidance,
-                  style: _textTheme.bodySmall?.copyWith(
-                    color: _scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: _sectionGap),
-          _panel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Top Three',
-                  style: _textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
                 const SizedBox(height: 8),
-                for (var i = 0; i < _taskControllers.length; i++) ...<Widget>[
-                  _taskRow(i),
-                  if (i < _taskControllers.length - 1)
-                    const SizedBox(height: 10),
-                ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Suggested focus block: $_recommendedFocusMinutes min.',
+                    style: _textTheme.bodySmall?.copyWith(
+                      color: _scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1208,41 +1215,78 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     );
   }
 
-  Widget _taskRow(int index) {
-    final complete = _taskDone[index];
-    final rowColor = complete
-        ? _scheme.primaryContainer.withValues(alpha: 0.4)
-        : _scheme.surfaceContainerHigh;
+  Widget _energyBatteryStrip() {
+    final activeIndex = _energyPresets.indexWhere(
+      (preset) => preset.value == _activeEnergyPreset.value,
+    );
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: rowColor,
-        borderRadius: BorderRadius.circular(14),
+        color: _scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _scheme.outlineVariant.withValues(alpha: 0.5),
+          color: _scheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
       child: Row(
         children: <Widget>[
-          Checkbox(
-            value: complete,
-            activeColor: _scheme.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-            onChanged: (value) => _setTaskDone(index, value ?? false),
-          ),
           Expanded(
-            child: TextField(
-              controller: _taskControllers[index],
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Priority ${index + 1}',
-              ),
-              style: _textTheme.bodyLarge?.copyWith(
-                decoration: complete ? TextDecoration.lineThrough : null,
-                color: complete ? _scheme.onSurfaceVariant : null,
-              ),
+            child: Row(
+              children: List<Widget>.generate(_energyPresets.length, (index) {
+                final preset = _energyPresets[index];
+                final lit = index <= activeIndex;
+                final selected = index == activeIndex;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: index == _energyPresets.length - 1 ? 0 : 3,
+                    ),
+                    child: Tooltip(
+                      message: '${preset.label} ${preset.value}%',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          key: ValueKey<String>(
+                            'energy-preset-${preset.value}',
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: () => _setEnergyPreset(preset),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: lit
+                                  ? preset.color.withValues(
+                                      alpha: selected ? 0.95 : 0.55,
+                                    )
+                                  : _scheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: lit
+                                    ? preset.color.withValues(alpha: 0.85)
+                                    : _scheme.outlineVariant.withValues(
+                                        alpha: 0.4,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Container(
+            width: 4,
+            height: 14,
+            decoration: BoxDecoration(
+              color: _scheme.outlineVariant.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
         ],
@@ -1251,10 +1295,12 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
   }
 
   Widget _todoPanel() {
-    final focusedTodo = _focusedTodo;
-    final queuedTodos = _queuedTodos;
+    final topTodos = _sortedOpenTodos.take(3).toList(growable: false);
     final completedTodos = _completedTodos;
-    final nextBestTodo = _nextBestTodo;
+    final hiddenOpenCount = max(0, _openTodoCount - topTodos.length);
+    final suggestedMinutes = _estimatedTodoMinutesFor(
+      _newTodoEnergyRequirement,
+    );
 
     return _panel(
       child: Column(
@@ -1264,7 +1310,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               Text(
-                'Todos',
+                'Tasks',
                 style: _textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -1284,11 +1330,12 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                 child: TextField(
                   key: const ValueKey<String>('todo-input'),
                   controller: _todoInputController,
+                  focusNode: _todoInputFocusNode,
                   textInputAction: TextInputAction.done,
+                  onTap: _expandTodoComposer,
+                  onChanged: (_) => _expandTodoComposer(),
                   onSubmitted: (_) => _addTodo(),
-                  decoration: const InputDecoration(
-                    hintText: 'Add a quick todo...',
-                  ),
+                  decoration: const InputDecoration(hintText: 'Add a task...'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1303,92 +1350,121 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: TaskEnergyRequirement.values
-                .map(
-                  (requirement) => ChoiceChip(
-                    key: ValueKey<String>('todo-energy-${requirement.name}'),
-                    selected: _newTodoEnergyRequirement == requirement,
-                    onSelected: (_) =>
-                        _setNewTodoEnergyRequirement(requirement),
-                    selectedColor: requirement.accent.withValues(alpha: 0.18),
-                    side: BorderSide(
-                      color: requirement.accent.withValues(alpha: 0.35),
-                    ),
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Icon(
-                          requirement.icon,
-                          size: 15,
-                          color: requirement.accent,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(requirement.label),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: _todoEstimatePresets
-                .map(
-                  (minutes) => ChoiceChip(
-                    key: ValueKey<String>('todo-effort-$minutes'),
-                    selected: _newTodoEstimateMinutes == minutes,
-                    onSelected: (_) => _setNewTodoEstimateMinutes(minutes),
-                    selectedColor: _scheme.secondaryContainer,
-                    label: Text('$minutes min'),
-                  ),
-                )
-                .toList(),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            child: _showTodoComposerDetails
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: TaskEnergyRequirement.values
+                            .map(
+                              (requirement) => ChoiceChip(
+                                key: ValueKey<String>(
+                                  'todo-energy-${requirement.name}',
+                                ),
+                                selected:
+                                    _newTodoEnergyRequirement == requirement,
+                                onSelected: (_) =>
+                                    _setNewTodoEnergyRequirement(requirement),
+                                selectedColor: requirement.accent.withValues(
+                                  alpha: 0.18,
+                                ),
+                                side: BorderSide(
+                                  color: requirement.accent.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                ),
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    Icon(
+                                      requirement.icon,
+                                      size: 15,
+                                      color: requirement.accent,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(requirement.label),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              'Suggested: $suggestedMinutes min for ${_newTodoEnergyRequirement.label.toLowerCase()} energy.',
+                              style: _textTheme.bodySmall?.copyWith(
+                                color: _scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            key: const ValueKey<String>('todo-use-estimate'),
+                            onPressed: _useSuggestedTodoEstimate,
+                            child: Text('Use $suggestedMinutes min'),
+                          ),
+                        ],
+                      ),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: _todoEstimatePresets
+                            .map(
+                              (minutes) => ChoiceChip(
+                                key: ValueKey<String>('todo-effort-$minutes'),
+                                selected: _newTodoEstimateMinutes == minutes,
+                                onSelected: (_) =>
+                                    _setNewTodoEstimateMinutes(minutes),
+                                selectedColor: _scheme.secondaryContainer,
+                                label: Text('$minutes min'),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
           ),
           if (_todos.isEmpty) ...<Widget>[
             const SizedBox(height: 10),
             Text(
-              'No todos yet. Add one task to keep the day focused.',
+              'No tasks yet. Add one to start your top three.',
               style: _textTheme.bodyMedium?.copyWith(
                 color: _scheme.onSurfaceVariant,
               ),
             ),
           ],
-          if (focusedTodo != null) ...<Widget>[
-            const SizedBox(height: 10),
-            Text(
-              'Now Focusing',
-              style: _textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            _todoRow(focusedTodo, isFocused: true),
-          ] else if (nextBestTodo != null) ...<Widget>[
-            const SizedBox(height: 10),
-            Text(
-              'Suggested next: ${nextBestTodo.title}',
-              style: _textTheme.bodySmall?.copyWith(
-                color: _scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          if (queuedTodos.isNotEmpty) ...<Widget>[
+          if (topTodos.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
             Text(
-              'Queue (${queuedTodos.length})',
+              'Top 3',
               style: _textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
-            ...queuedTodos.map(_todoRow),
+            ...topTodos.map(
+              (todo) => _todoRow(todo, isFocused: todo.id == _focusedTodoId),
+            ),
+            if (hiddenOpenCount > 0) ...<Widget>[
+              const SizedBox(height: 8),
+              Text(
+                '$hiddenOpenCount more queued. Finish one and the next appears here.',
+                style: _textTheme.bodySmall?.copyWith(
+                  color: _scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ],
           if (completedTodos.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
@@ -1410,14 +1486,24 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                 ),
               ],
             ),
-            if (_showFinishedTodos) ...completedTodos.map(_todoRow),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: _clearCompletedTodos,
-                icon: const Icon(Icons.cleaning_services_outlined),
-                label: Text('Clear finished (${completedTodos.length})'),
-              ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              child: _showFinishedTodos
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        ...completedTodos.map(_todoRow),
+                        TextButton.icon(
+                          onPressed: _clearCompletedTodos,
+                          icon: const Icon(Icons.cleaning_services_outlined),
+                          label: Text(
+                            'Clear finished (${completedTodos.length})',
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
             ),
           ],
         ],
