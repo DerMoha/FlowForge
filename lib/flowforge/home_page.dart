@@ -10,7 +10,9 @@ import 'models/task_energy_requirement.dart';
 import 'models/todo_item.dart';
 
 class FlowForgeHome extends StatefulWidget {
-  const FlowForgeHome({super.key});
+  const FlowForgeHome({super.key, required this.onToggleTheme});
+
+  final VoidCallback onToggleTheme;
 
   @override
   State<FlowForgeHome> createState() => _FlowForgeHomeState();
@@ -19,7 +21,7 @@ class FlowForgeHome extends StatefulWidget {
 class _FlowForgeHomeState extends State<FlowForgeHome>
     with WidgetsBindingObserver {
   static const String _stateKey = 'flowforge_state_v1';
-  static const EdgeInsets _pagePadding = EdgeInsets.fromLTRB(20, 6, 20, 130);
+  static const EdgeInsets _pagePadding = EdgeInsets.fromLTRB(20, 6, 20, 24);
   static const double _sectionGap = 14;
   static const List<int> _minutePresets = <int>[15, 25, 45, 60];
   static const List<int> _todoEstimatePresets = <int>[10, 15, 25, 45, 60, 90];
@@ -991,74 +993,47 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
   bool get _hasFocusProgress =>
       _isRunning || _remainingSeconds != _focusMinutes * 60;
 
+  ColorScheme get _scheme => Theme.of(context).colorScheme;
+
+  TextTheme get _textTheme => Theme.of(context).textTheme;
+
+  bool get _isDarkTheme => Theme.of(context).brightness == Brightness.dark;
+
+  Color get _panelColor => _scheme.surfaceContainerLow;
+
+  Color get _panelBorderColor =>
+      _scheme.outlineVariant.withValues(alpha: _isDarkTheme ? 0.45 : 0.7);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[Color(0xFFF7F3E8), Color(0xFFE8F2EA)],
-          ),
-        ),
-        child: Stack(
+      body: SafeArea(
+        child: Column(
           children: <Widget>[
-            Positioned(
-              top: -70,
-              right: -60,
-              child: _backgroundOrb(const Color(0xFFF9C66B), 200),
-            ),
-            Positioned(
-              top: 180,
-              left: -70,
-              child: _backgroundOrb(const Color(0xFF98C9B6), 180),
-            ),
-            Positioned(
-              bottom: -80,
-              right: 10,
-              child: _backgroundOrb(const Color(0xFFA8BED8), 220),
-            ),
-            SafeArea(
-              child: Column(
-                children: <Widget>[
-                  _header(),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      child: KeyedSubtree(
-                        key: ValueKey<int>(_tabIndex),
-                        child: _tabContent(),
-                      ),
-                    ),
-                  ),
-                  _bottomBar(),
-                ],
+            _header(),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: KeyedSubtree(
+                  key: ValueKey<int>(_tabIndex),
+                  child: _tabContent(),
+                ),
               ),
             ),
+            _bottomBar(),
           ],
         ),
       ),
     );
   }
 
-  Widget _backgroundOrb(Color color, double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color.withValues(alpha: 0.22),
-      ),
-    );
-  }
-
   Widget _header() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 8),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
             child: Column(
@@ -1066,50 +1041,57 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
               children: <Widget>[
                 Text(
                   'FlowForge',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  style: _textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   _formatFullDate(DateTime.now()),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF5A5852),
+                  style: _textTheme.bodyMedium?.copyWith(
+                    color: _scheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1F7A6A),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: const Color(0xFF1F7A6A).withValues(alpha: 0.3),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+          _momentumChip(),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: _isDarkTheme
+                ? 'Switch to light mode'
+                : 'Switch to dark mode',
+            onPressed: widget.onToggleTheme,
+            icon: Icon(
+              _isDarkTheme ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
             ),
-            child: Column(
-              children: <Widget>[
-                Text(
-                  'Momentum',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ),
-                Text(
-                  '$_momentumScore',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _momentumChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            Icons.trending_up_rounded,
+            size: 16,
+            color: _scheme.onPrimaryContainer,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$_momentumScore',
+            style: _textTheme.labelLarge?.copyWith(
+              color: _scheme.onPrimaryContainer,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1139,41 +1121,19 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  'Daily Intent',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'I use this app to be deliberate: three priorities, one deep session, then a clean shutdown.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF55524C),
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: _sectionGap),
-          _panel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     Text(
                       'Energy',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: _textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
                       '${_energy.round()}% · $_energyLabel',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF55524C),
+                      style: _textTheme.bodyMedium?.copyWith(
+                        color: _scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1188,13 +1148,17 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                       key: ValueKey<String>('energy-preset-${preset.value}'),
                       tooltip: preset.hint,
                       selected: selected,
-                      selectedColor: preset.color.withValues(alpha: 0.18),
+                      selectedColor: _scheme.primaryContainer,
                       side: BorderSide(
                         color: selected
-                            ? preset.color.withValues(alpha: 0.6)
-                            : const Color(0xFFCFCFC9),
+                            ? _scheme.primary.withValues(alpha: 0.55)
+                            : _scheme.outlineVariant,
                       ),
-                      avatar: Icon(preset.icon, size: 16, color: preset.color),
+                      avatar: Icon(
+                        preset.icon,
+                        size: 16,
+                        color: selected ? _scheme.primary : _scheme.secondary,
+                      ),
                       label: Text('${preset.label} ${preset.value}%'),
                       onSelected: (_) => _setEnergyPreset(preset),
                     );
@@ -1202,46 +1166,16 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _activeEnergyPreset.hint,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: const Color(0xFF625D54),
+                  'Suggested focus block: $_recommendedFocusMinutes min',
+                  style: _textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAF4EF),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFC4DCCE)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Suggested focus block: $_recommendedFocusMinutes min',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _energyGuidance,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF4D554E),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _isRunning
-                            ? 'Focus timer will auto-sync after this session.'
-                            : 'Focus timer auto-syncs instantly when energy changes.',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: const Color(0xFF486153),
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 4),
+                Text(
+                  _energyGuidance,
+                  style: _textTheme.bodySmall?.copyWith(
+                    color: _scheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -1254,7 +1188,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
               children: <Widget>[
                 Text(
                   'Top Three',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: _textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1276,17 +1210,23 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
 
   Widget _taskRow(int index) {
     final complete = _taskDone[index];
+    final rowColor = complete
+        ? _scheme.primaryContainer.withValues(alpha: 0.4)
+        : _scheme.surfaceContainerHigh;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
-        color: complete ? const Color(0xFFE4F3EB) : const Color(0xFFF4F3EE),
+        color: rowColor,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: _scheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: <Widget>[
           Checkbox(
             value: complete,
-            activeColor: const Color(0xFF1F7A6A),
+            activeColor: _scheme.primary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -1299,9 +1239,9 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                 border: InputBorder.none,
                 hintText: 'Priority ${index + 1}',
               ),
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              style: _textTheme.bodyLarge?.copyWith(
                 decoration: complete ? TextDecoration.lineThrough : null,
-                color: complete ? const Color(0xFF5B7F6D) : null,
+                color: complete ? _scheme.onSurfaceVariant : null,
               ),
             ),
           ),
@@ -1314,6 +1254,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     final focusedTodo = _focusedTodo;
     final queuedTodos = _queuedTodos;
     final completedTodos = _completedTodos;
+    final nextBestTodo = _nextBestTodo;
 
     return _panel(
       child: Column(
@@ -1324,15 +1265,15 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
             children: <Widget>[
               Text(
                 'Todos',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                style: _textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               Text(
                 '$_openTodoCount open · $_completedTodoCount finished',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: const Color(0xFF625F58)),
+                style: _textTheme.bodySmall?.copyWith(
+                  color: _scheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -1355,8 +1296,6 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                 key: const ValueKey<String>('todo-add-button'),
                 onPressed: _addTodo,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF1F7A6A),
-                  foregroundColor: Colors.white,
                   minimumSize: const Size(48, 48),
                   padding: EdgeInsets.zero,
                 ),
@@ -1405,102 +1344,48 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                     key: ValueKey<String>('todo-effort-$minutes'),
                     selected: _newTodoEstimateMinutes == minutes,
                     onSelected: (_) => _setNewTodoEstimateMinutes(minutes),
-                    selectedColor: const Color(0xFFE4EEF8),
+                    selectedColor: _scheme.secondaryContainer,
                     label: Text('$minutes min'),
                   ),
                 )
                 .toList(),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'New task: ${_newTodoEnergyRequirement.label} energy, $_newTodoEstimateMinutes minutes.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF5F5B55)),
-          ),
-          if (focusedTodo == null && _nextBestTodo != null) ...<Widget>[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F1EA),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFC3D4C7)),
-              ),
-              child: Row(
-                children: <Widget>[
-                  Icon(
-                    _isEnergyFit(_nextBestTodo!)
-                        ? Icons.bolt_rounded
-                        : Icons.schedule_rounded,
-                    color: const Color(0xFF2C6A52),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Best next: ${_nextBestTodo!.title} • ${_todoConstraintHint(_nextBestTodo!)}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF395044),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           if (_todos.isEmpty) ...<Widget>[
             const SizedBox(height: 10),
             Text(
-              'Nothing captured yet. Add small tasks here so your Top Three stay clean.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF5E5A54)),
+              'No todos yet. Add one task to keep the day focused.',
+              style: _textTheme.bodyMedium?.copyWith(
+                color: _scheme.onSurfaceVariant,
+              ),
             ),
           ],
           if (focusedTodo != null) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(
-              'Now Focusing',
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'One thing at a time. This task stays pinned until you finish it or switch focus.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF57534C)),
-            ),
-            _todoRow(focusedTodo, isFocused: true),
-          ] else if (_openTodoCount > 0) ...<Widget>[
             const SizedBox(height: 10),
             Text(
-              'Pick one task to focus. Single-task mode works best when one item is active.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF57534C)),
+              'Now Focusing',
+              style: _textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            _todoRow(focusedTodo, isFocused: true),
+          ] else if (nextBestTodo != null) ...<Widget>[
+            const SizedBox(height: 10),
+            Text(
+              'Suggested next: ${nextBestTodo.title}',
+              style: _textTheme.bodySmall?.copyWith(
+                color: _scheme.onSurfaceVariant,
+              ),
             ),
           ],
           if (queuedTodos.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
             Text(
               'Queue (${queuedTodos.length})',
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+              style: _textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
             ...queuedTodos.map(_todoRow),
-          ],
-          if (_openTodoCount == 0 && _todos.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 10),
-            Text(
-              'Open list cleared. Great stopping point.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF4E5F53)),
-            ),
           ],
           if (completedTodos.isNotEmpty) ...<Widget>[
             const SizedBox(height: 8),
@@ -1509,9 +1394,9 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
               children: <Widget>[
                 Text(
                   'Finished (${completedTodos.length})',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                  style: _textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 TextButton(
                   key: const ValueKey<String>('toggle-finished-todos'),
@@ -1545,13 +1430,13 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     final energyFits = _isEnergyFit(todo);
     final timeFits = _isTimeFit(todo);
     final fitColor = energyFits && timeFits
-        ? const Color(0xFF2E6A4E)
-        : const Color(0xFF7B5D2C);
+        ? _scheme.primary
+        : _scheme.tertiary;
     final highlightColor = isDone
-        ? const Color(0xFFE4F3EB)
+        ? _scheme.surfaceContainerHighest
         : isFocused
-        ? const Color(0xFFE6F4EE)
-        : const Color(0xFFF3F1EC);
+        ? _scheme.primaryContainer.withValues(alpha: _isDarkTheme ? 0.45 : 0.65)
+        : _scheme.surfaceContainer;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -1561,7 +1446,9 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
         color: highlightColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isFocused ? const Color(0xFF2E7A63) : Colors.transparent,
+          color: isFocused
+              ? _scheme.primary
+              : _scheme.outlineVariant.withValues(alpha: 0.55),
           width: 1.2,
         ),
       ),
@@ -1570,7 +1457,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
         children: <Widget>[
           Checkbox(
             value: isDone,
-            activeColor: const Color(0xFF1F7A6A),
+            activeColor: _scheme.primary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -1582,9 +1469,9 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
               children: <Widget>[
                 Text(
                   todo.title,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  style: _textTheme.bodyLarge?.copyWith(
                     decoration: isDone ? TextDecoration.lineThrough : null,
-                    color: isDone ? const Color(0xFF50785F) : null,
+                    color: isDone ? _scheme.onSurfaceVariant : null,
                   ),
                 ),
                 if (isFocused && !isDone) ...<Widget>[
@@ -1592,7 +1479,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                   _todoTag(
                     icon: Icons.center_focus_strong_rounded,
                     text: 'Focused now',
-                    color: const Color(0xFF2E7A63),
+                    color: _scheme.primary,
                   ),
                 ],
                 const SizedBox(height: 4),
@@ -1608,7 +1495,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                     _todoTag(
                       icon: Icons.timer_outlined,
                       text: '${todo.estimateMinutes} min',
-                      color: const Color(0xFF3E6287),
+                      color: _scheme.secondary,
                     ),
                   ],
                 ),
@@ -1617,10 +1504,10 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                   isDone
                       ? 'Completed.'
                       : isFocused
-                      ? 'This is your active task. Tap another open task to switch focus.'
+                      ? 'This is your active task.'
                       : _todoConstraintHint(todo),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isDone ? const Color(0xFF4E705B) : fitColor,
+                  style: _textTheme.labelSmall?.copyWith(
+                    color: isDone ? _scheme.onSurfaceVariant : fitColor,
                   ),
                 ),
               ],
@@ -1638,11 +1525,13 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                         ? Icons.center_focus_strong_rounded
                         : Icons.center_focus_weak_rounded,
                   ),
+                  color: _scheme.onSurfaceVariant,
                 ),
               IconButton(
                 tooltip: 'Delete todo',
                 onPressed: () => _deleteTodo(todo.id),
                 icon: const Icon(Icons.close_rounded),
+                color: _scheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -1656,21 +1545,24 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     required String text,
     required Color color,
   }) {
+    final textColor = _isDarkTheme
+        ? Color.alphaBlend(Colors.white.withValues(alpha: 0.2), color)
+        : color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: _isDarkTheme ? 0.26 : 0.14),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: 13, color: textColor),
           const SizedBox(width: 4),
           Text(
             text,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
+            style: _textTheme.labelSmall?.copyWith(
+              color: textColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1687,26 +1579,28 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEF2EE),
+        color: _scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFC9D7CF)),
+        border: Border.all(
+          color: _scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 15, color: const Color(0xFF1F7A6A)),
+          Icon(icon, size: 15, color: _scheme.primary),
           const SizedBox(width: 6),
           Text(
             '$label: ',
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: const Color(0xFF4D5F52)),
+            style: _textTheme.labelSmall?.copyWith(
+              color: _scheme.onSurfaceVariant,
+            ),
           ),
           Text(
             value,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            style: _textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF1F1D19),
+              color: _scheme.onSurface,
             ),
           ),
         ],
@@ -1728,8 +1622,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
             child: Column(
               children: <Widget>[
                 SizedBox(
-                  width: 250,
-                  height: 250,
+                  width: 240,
+                  height: 240,
                   child: Stack(
                     alignment: Alignment.center,
                     children: <Widget>[
@@ -1741,73 +1635,59 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                         ),
                         builder: (context, value, child) {
                           return SizedBox(
-                            width: 230,
-                            height: 230,
+                            width: 220,
+                            height: 220,
                             child: CircularProgressIndicator(
-                              strokeWidth: 13,
+                              strokeWidth: 12,
                               value: value,
-                              backgroundColor: const Color(0xFFD8D7D2),
+                              backgroundColor: _scheme.surfaceContainerHighest,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 _isRunning
-                                    ? const Color(0xFF1F7A6A)
-                                    : const Color(0xFF2C527A),
+                                    ? _scheme.primary
+                                    : _scheme.secondary,
                               ),
                             ),
                           );
                         },
                       ),
                       AnimatedContainer(
-                        duration: const Duration(milliseconds: 450),
+                        duration: const Duration(milliseconds: 280),
                         curve: Curves.easeInOut,
-                        width: _isRunning ? 152 : 142,
-                        height: _isRunning ? 152 : 142,
+                        width: _isRunning ? 158 : 148,
+                        height: _isRunning ? 158 : 148,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: _isRunning
-                                ? const <Color>[
-                                    Color(0xFF1F7A6A),
-                                    Color(0xFF74B99A),
-                                  ]
-                                : const <Color>[
-                                    Color(0xFF3A648F),
-                                    Color(0xFF8DA8C9),
-                                  ],
+                          color: _isRunning
+                              ? _scheme.primaryContainer
+                              : _scheme.surfaceContainerHigh,
+                          border: Border.all(
+                            color: _isRunning
+                                ? _scheme.primary.withValues(alpha: 0.5)
+                                : _scheme.outlineVariant.withValues(alpha: 0.6),
                           ),
-                          boxShadow: <BoxShadow>[
-                            BoxShadow(
-                              color:
-                                  (_isRunning
-                                          ? const Color(0xFF1F7A6A)
-                                          : const Color(0xFF355C86))
-                                      .withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
                             Text(
                               _formatDuration(_remainingSeconds),
-                              style: Theme.of(context).textTheme.headlineMedium
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                              style: _textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: _isRunning
+                                    ? _scheme.onPrimaryContainer
+                                    : _scheme.onSurface,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               _isRunning
                                   ? 'Flow in progress'
                                   : 'Ready to focus',
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.92),
-                                  ),
+                              style: _textTheme.labelMedium?.copyWith(
+                                color: _isRunning
+                                    ? _scheme.onPrimaryContainer
+                                    : _scheme.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),
@@ -1829,8 +1709,6 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                           _isRunning ? 'Pause Session' : 'Start Session',
                         ),
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF1F7A6A),
-                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         onPressed: _toggleTimer,
@@ -1840,10 +1718,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                     OutlinedButton(
                       key: const ValueKey<String>('focus-reset-button'),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFF1F7A6A),
-                          width: 1.2,
-                        ),
+                        side: BorderSide(color: _scheme.primary, width: 1.2),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 18,
                           vertical: 14,
@@ -1861,7 +1736,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                       .map(
                         (minutes) => ChoiceChip(
                           label: Text('$minutes min'),
-                          selectedColor: const Color(0xFFDCF1E7),
+                          selectedColor: _scheme.primaryContainer,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -1872,44 +1747,39 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                       .toList(),
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F2F5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFD0D6DD)),
-                  ),
-                  child: Text(
-                    'Energy says $_recommendedFocusMinutes minutes is your best block right now.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF4B515A),
-                    ),
+                Text(
+                  'Energy suggests $_recommendedFocusMinutes minutes for your next block.',
+                  style: _textTheme.bodySmall?.copyWith(
+                    color: _scheme.onSurfaceVariant,
                   ),
                 ),
                 if (focusedTodo != null) ...<Widget>[
                   const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEAF4EF),
+                      color: _scheme.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFC4DCCE)),
+                      border: Border.all(
+                        color: _scheme.outlineVariant.withValues(alpha: 0.6),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
                           'Current target',
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                          style: _textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           focusedTodo.title,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
+                          style: _textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Wrap(
@@ -1925,7 +1795,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                             _todoTag(
                               icon: Icons.timer_outlined,
                               text: '${focusedTodo.estimateMinutes} min',
-                              color: const Color(0xFF3E6287),
+                              color: _scheme.secondary,
                             ),
                           ],
                         ),
@@ -1935,9 +1805,9 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                 ] else if (_openTodoCount > 0) ...<Widget>[
                   const SizedBox(height: 10),
                   Text(
-                    'Pick one open todo in Today tab so this session has a single target.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF56615A),
+                    'Pick one open todo in Today so this session has a clear target.',
+                    style: _textTheme.bodySmall?.copyWith(
+                      color: _scheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -1970,16 +1840,16 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
               children: <Widget>[
                 Text(
                   'Recent Sessions',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: _textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
                 if (_logs.isEmpty)
                   Text(
-                    'No sessions yet. Start one and this timeline will build itself.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF5B5A56),
+                    'No sessions yet. Start one to build your streak.',
+                    style: _textTheme.bodyMedium?.copyWith(
+                      color: _scheme.onSurfaceVariant,
                     ),
                   ),
                 for (final log in _logs.take(6))
@@ -1987,22 +1857,23 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: <Widget>[
-                        const Icon(
+                        Icon(
                           Icons.bolt_rounded,
-                          color: Color(0xFF1F7A6A),
+                          color: _scheme.primary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             '${log.minutes} min session',
-                            style: Theme.of(context).textTheme.bodyLarge,
+                            style: _textTheme.bodyLarge,
                           ),
                         ),
                         Text(
                           _formatTime(log.completedAt),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: const Color(0xFF66635D)),
+                          style: _textTheme.bodySmall?.copyWith(
+                            color: _scheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -2032,24 +1903,26 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
         children: <Widget>[
           Text(
             'Focus Activity',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            style: _textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Git-style board for the last 12 weeks. $_sessionsThisWeek sessions this week ($_minutesThisWeek min).',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF5D5B56)),
+            'Last 12 weeks: $_sessionsThisWeek sessions this week ($_minutesThisWeek min).',
+            style: _textTheme.bodySmall?.copyWith(
+              color: _scheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F5EE),
+              color: _scheme.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE0DCCF)),
+              border: Border.all(
+                color: _scheme.outlineVariant.withValues(alpha: 0.6),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2103,9 +1976,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                                       color: cellColor,
                                       borderRadius: BorderRadius.circular(3),
                                       border: Border.all(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.08,
-                                        ),
+                                        color: _scheme.outlineVariant
+                                            .withValues(alpha: 0.35),
                                       ),
                                     ),
                                   ),
@@ -2127,8 +1999,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
             children: <Widget>[
               Text(
                 'Less',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFF6B6963),
+                style: _textTheme.labelSmall?.copyWith(
+                  color: _scheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: 6),
@@ -2149,8 +2021,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
               const SizedBox(width: 6),
               Text(
                 'More',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFF6B6963),
+                style: _textTheme.labelSmall?.copyWith(
+                  color: _scheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -2172,15 +2044,15 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
               children: <Widget>[
                 Text(
                   'Shutdown Ritual',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  style: _textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'I keep this simple so tomorrow starts clean.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF595751),
+                  'Close the day with three quick prompts.',
+                  style: _textTheme.bodyMedium?.copyWith(
+                    color: _scheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -2209,8 +2081,6 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                         icon: const Icon(Icons.auto_awesome),
                         label: const Text('Draft Shutdown Note'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF2C527A),
-                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         onPressed: _draftShutdownNote,
@@ -2234,17 +2104,14 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                 children: <Widget>[
                   Text(
                     'Daily Close',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: _textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _shutdownNote,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: const Color(0xFF292723),
-                      height: 1.35,
-                    ),
+                    style: _textTheme.bodyLarge?.copyWith(height: 1.35),
                   ),
                 ],
               ),
@@ -2265,24 +2132,13 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
       children: <Widget>[
         Text(
           label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+          style: _textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           maxLines: 2,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: const Color(0xFFF5F4F0),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.all(12),
-          ),
+          decoration: InputDecoration(hintText: hint),
         ),
       ],
     );
@@ -2292,22 +2148,11 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[Color(0xFFFDFCF8), Color(0xFFF7F4EB)],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2DDD1)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: const Color(0xFF2B2A28).withValues(alpha: 0.07),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        color: _panelColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _panelBorderColor),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: child,
     );
   }
@@ -2320,18 +2165,14 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
     ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF1B1D22),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: const Color(0xFF111318).withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
+          color: _scheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _scheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Row(
           children: List<Widget>.generate(items.length, (index) {
@@ -2348,12 +2189,12 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     color: selected
-                        ? const Color(0xFF2A6E62)
+                        ? _scheme.primaryContainer
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -2362,18 +2203,17 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
                         item.icon,
                         size: 20,
                         color: selected
-                            ? Colors.white
-                            : const Color(0xFFB9BAC0),
+                            ? _scheme.onPrimaryContainer
+                            : _scheme.onSurfaceVariant,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         item.label,
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: selected
-                                  ? Colors.white
-                                  : const Color(0xFFB9BAC0),
-                            ),
+                        style: _textTheme.labelMedium?.copyWith(
+                          color: selected
+                              ? _scheme.onPrimaryContainer
+                              : _scheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -2413,19 +2253,19 @@ class _FlowForgeHomeState extends State<FlowForgeHome>
 
   Color _activityColorForDay(int sessions, int maxSessions) {
     if (sessions <= 0 || maxSessions <= 0) {
-      return const Color(0xFFE8E5DD);
+      return _scheme.surfaceContainerHighest;
     }
     final normalized = sessions / maxSessions;
     if (normalized >= 0.85) {
-      return const Color(0xFF1F7A6A);
+      return _scheme.primary;
     }
     if (normalized >= 0.6) {
-      return const Color(0xFF3B9B84);
+      return _scheme.primary.withValues(alpha: 0.85);
     }
     if (normalized >= 0.35) {
-      return const Color(0xFF74B99A);
+      return _scheme.primary.withValues(alpha: 0.6);
     }
-    return const Color(0xFFBBDCCB);
+    return _scheme.primary.withValues(alpha: 0.35);
   }
 
   String _formatShortDate(DateTime dateTime) {
@@ -2507,7 +2347,7 @@ class _ActivityDayLabel extends StatelessWidget {
     return Text(
       label,
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: const Color(0xFF7A756B),
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontWeight: FontWeight.w600,
       ),
     );
