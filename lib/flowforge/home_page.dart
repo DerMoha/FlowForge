@@ -18,6 +18,8 @@ class FlowForgeHome extends StatefulWidget {
 
 class _FlowForgeHomeState extends State<FlowForgeHome> {
   static const String _stateKey = 'flowforge_state_v1';
+  static const EdgeInsets _pagePadding = EdgeInsets.fromLTRB(20, 6, 20, 130);
+  static const double _sectionGap = 14;
   static const List<int> _minutePresets = <int>[15, 25, 45, 60];
   static const List<int> _todoEstimatePresets = <int>[10, 15, 25, 45, 60, 90];
   static const int _activityDays = 84;
@@ -863,7 +865,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
 
   Widget _todayTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 130),
+      padding: _pagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -888,6 +890,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
               ],
             ),
           ),
+          const SizedBox(height: _sectionGap),
           _panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -931,6 +934,13 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                     );
                   }).toList(),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  _activeEnergyPreset.hint,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: const Color(0xFF625D54),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
@@ -971,6 +981,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
               ],
             ),
           ),
+          const SizedBox(height: _sectionGap),
           _panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -990,7 +1001,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: _sectionGap),
           _todoPanel(),
         ],
       ),
@@ -1064,18 +1075,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                   controller: _todoInputController,
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _addTodo(),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Add a quick todo...',
-                    filled: true,
-                    fillColor: const Color(0xFFF6F5F1),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
                   ),
                 ),
               ),
@@ -1303,12 +1304,47 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     );
   }
 
+  Widget _statPill({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF2EE),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFC9D7CF)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 15, color: const Color(0xFF1F7A6A)),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: const Color(0xFF4D5F52)),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F1D19),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _focusTab() {
     final totalSeconds = _focusMinutes * 60;
     final completion = (1 - (_remainingSeconds / totalSeconds)).clamp(0.0, 1.0);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 130),
+      padding: _pagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -1478,9 +1514,26 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: _sectionGap),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _statPill(
+                icon: Icons.bolt_rounded,
+                label: 'Sessions this week',
+                value: '$_sessionsThisWeek',
+              ),
+              _statPill(
+                icon: Icons.timer_outlined,
+                label: 'Minutes this week',
+                value: '$_minutesThisWeek',
+              ),
+            ],
+          ),
+          const SizedBox(height: _sectionGap),
           _activityBoard(),
-          const SizedBox(height: 14),
+          const SizedBox(height: _sectionGap),
           _panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1561,48 +1614,81 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
             ).textTheme.bodySmall?.copyWith(color: const Color(0xFF5D5B56)),
           ),
           const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F5EE),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE0DCCF)),
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: List<Widget>.generate(weeks.length, (weekIndex) {
-                final week = weeks[weekIndex];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 4),
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.only(right: 8, top: 1),
                   child: Column(
-                    children: List<Widget>.generate(7, (dayIndex) {
-                      if (dayIndex >= week.length) {
-                        return const SizedBox(width: 14, height: 14);
-                      }
-                      final day = week[dayIndex];
-                      final cellColor = _activityColorForDay(
-                        day.sessions,
-                        maxSessions,
-                      );
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Tooltip(
-                          message:
-                              '${_formatShortDate(day.day)} · ${day.sessions} '
-                              '${day.sessions == 1 ? 'session' : 'sessions'} · '
-                              '${day.minutes} min',
-                          child: Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: cellColor,
-                              borderRadius: BorderRadius.circular(3),
-                              border: Border.all(
-                                color: Colors.black.withValues(alpha: 0.08),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
+                    children: const <Widget>[
+                      _ActivityDayLabel(label: 'M'),
+                      SizedBox(height: 12),
+                      _ActivityDayLabel(label: 'W'),
+                      SizedBox(height: 12),
+                      _ActivityDayLabel(label: 'F'),
+                    ],
                   ),
-                );
-              }),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: List<Widget>.generate(weeks.length, (
+                        weekIndex,
+                      ) {
+                        final week = weeks[weekIndex];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Column(
+                            children: List<Widget>.generate(7, (dayIndex) {
+                              if (dayIndex >= week.length) {
+                                return const SizedBox(width: 14, height: 14);
+                              }
+                              final day = week[dayIndex];
+                              final cellColor = _activityColorForDay(
+                                day.sessions,
+                                maxSessions,
+                              );
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2,
+                                ),
+                                child: Tooltip(
+                                  message:
+                                      '${_formatShortDate(day.day)} · ${day.sessions} '
+                                      '${day.sessions == 1 ? 'session' : 'sessions'} · '
+                                      '${day.minutes} min',
+                                  child: Container(
+                                    width: 14,
+                                    height: 14,
+                                    decoration: BoxDecoration(
+                                      color: cellColor,
+                                      borderRadius: BorderRadius.circular(3),
+                                      border: Border.all(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.08,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 10),
@@ -1646,7 +1732,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
 
   Widget _reflectTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 130),
+      padding: _pagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -1711,7 +1797,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
             ),
           ),
           if (_shutdownNote.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 14),
+            const SizedBox(height: _sectionGap),
             _panel(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1776,18 +1862,22 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE0DCCE)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[Color(0xFFFDFCF8), Color(0xFFF7F4EB)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2DDD1)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFF2B2A28).withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF2B2A28).withValues(alpha: 0.07),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       child: child,
     );
   }
@@ -1975,6 +2065,23 @@ class _EnergyPreset {
   final String hint;
   final IconData icon;
   final Color color;
+}
+
+class _ActivityDayLabel extends StatelessWidget {
+  const _ActivityDayLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: const Color(0xFF7A756B),
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }
 
 class _DailySessionActivity {
