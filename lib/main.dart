@@ -63,30 +63,105 @@ class SessionLog {
   }
 }
 
+enum TaskEnergyRequirement { low, medium, high, deep }
+
+extension TaskEnergyRequirementX on TaskEnergyRequirement {
+  String get label {
+    switch (this) {
+      case TaskEnergyRequirement.low:
+        return 'Low';
+      case TaskEnergyRequirement.medium:
+        return 'Medium';
+      case TaskEnergyRequirement.high:
+        return 'High';
+      case TaskEnergyRequirement.deep:
+        return 'Deep';
+    }
+  }
+
+  int get minEnergy {
+    switch (this) {
+      case TaskEnergyRequirement.low:
+        return 20;
+      case TaskEnergyRequirement.medium:
+        return 45;
+      case TaskEnergyRequirement.high:
+        return 65;
+      case TaskEnergyRequirement.deep:
+        return 80;
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case TaskEnergyRequirement.low:
+        return Icons.eco_rounded;
+      case TaskEnergyRequirement.medium:
+        return Icons.local_fire_department_rounded;
+      case TaskEnergyRequirement.high:
+        return Icons.flash_on_rounded;
+      case TaskEnergyRequirement.deep:
+        return Icons.rocket_launch_rounded;
+    }
+  }
+
+  Color get accent {
+    switch (this) {
+      case TaskEnergyRequirement.low:
+        return const Color(0xFF4F8A63);
+      case TaskEnergyRequirement.medium:
+        return const Color(0xFFBA7A32);
+      case TaskEnergyRequirement.high:
+        return const Color(0xFFAF5E2C);
+      case TaskEnergyRequirement.deep:
+        return const Color(0xFF8F3A2A);
+    }
+  }
+
+  String get storageValue => name;
+
+  static TaskEnergyRequirement fromStorageValue(String? value) {
+    for (final level in TaskEnergyRequirement.values) {
+      if (level.storageValue == value) {
+        return level;
+      }
+    }
+    return TaskEnergyRequirement.medium;
+  }
+}
+
 class TodoItem {
   const TodoItem({
     required this.id,
     required this.title,
     required this.isDone,
     required this.createdAt,
+    required this.energyRequirement,
+    required this.estimateMinutes,
   });
 
   final String id;
   final String title;
   final bool isDone;
   final DateTime createdAt;
+  final TaskEnergyRequirement energyRequirement;
+  final int estimateMinutes;
 
   TodoItem copyWith({
     String? id,
     String? title,
     bool? isDone,
     DateTime? createdAt,
+    TaskEnergyRequirement? energyRequirement,
+    int? estimateMinutes,
   }) {
     return TodoItem(
       id: id ?? this.id,
       title: title ?? this.title,
       isDone: isDone ?? this.isDone,
       createdAt: createdAt ?? this.createdAt,
+      energyRequirement: energyRequirement ?? this.energyRequirement,
+      estimateMinutes: estimateMinutes ?? this.estimateMinutes,
     );
   }
 
@@ -96,6 +171,8 @@ class TodoItem {
       'title': title,
       'is_done': isDone,
       'created_at': createdAt.toIso8601String(),
+      'energy_requirement': energyRequirement.storageValue,
+      'estimate_minutes': estimateMinutes,
     };
   }
 
@@ -104,6 +181,8 @@ class TodoItem {
     final rawTitle = json['title'];
     final rawDone = json['is_done'];
     final rawCreatedAt = json['created_at'];
+    final rawEnergyRequirement = json['energy_requirement'];
+    final rawEstimateMinutes = json['estimate_minutes'];
 
     if (rawId is! String ||
         rawTitle is! String ||
@@ -122,6 +201,12 @@ class TodoItem {
       title: rawTitle,
       isDone: rawDone,
       createdAt: parsedCreatedAt,
+      energyRequirement: TaskEnergyRequirementX.fromStorageValue(
+        rawEnergyRequirement is String ? rawEnergyRequirement : null,
+      ),
+      estimateMinutes: rawEstimateMinutes is int
+          ? rawEstimateMinutes.clamp(10, 240)
+          : 25,
     );
   }
 }
@@ -136,6 +221,37 @@ class FlowForgeHome extends StatefulWidget {
 class _FlowForgeHomeState extends State<FlowForgeHome> {
   static const String _stateKey = 'flowforge_state_v1';
   static const List<int> _minutePresets = <int>[15, 25, 45, 60];
+  static const List<int> _todoEstimatePresets = <int>[10, 15, 25, 45, 60, 90];
+  static const List<_EnergyPreset> _energyPresets = <_EnergyPreset>[
+    _EnergyPreset(
+      value: 25,
+      label: 'Low',
+      hint: 'Recovery mode',
+      icon: Icons.bedtime_rounded,
+      color: Color(0xFF5F7A8A),
+    ),
+    _EnergyPreset(
+      value: 45,
+      label: 'Warm',
+      hint: 'Build momentum',
+      icon: Icons.eco_rounded,
+      color: Color(0xFF4F8A63),
+    ),
+    _EnergyPreset(
+      value: 65,
+      label: 'Steady',
+      hint: 'Main work mode',
+      icon: Icons.local_fire_department_rounded,
+      color: Color(0xFFBA7A32),
+    ),
+    _EnergyPreset(
+      value: 85,
+      label: 'Surging',
+      hint: 'Deep push',
+      icon: Icons.rocket_launch_rounded,
+      color: Color(0xFF8F3A2A),
+    ),
+  ];
 
   final List<TextEditingController> _taskControllers =
       List<TextEditingController>.generate(3, (_) => TextEditingController());
@@ -148,6 +264,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   late double _energy;
   late int _focusMinutes;
   late int _remainingSeconds;
+  late TaskEnergyRequirement _newTodoEnergyRequirement;
+  late int _newTodoEstimateMinutes;
 
   int _tabIndex = 0;
   bool _isRunning = false;
@@ -161,9 +279,11 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   void initState() {
     super.initState();
     _taskDone = List<bool>.filled(3, false);
-    _energy = 68;
+    _energy = 65;
     _focusMinutes = 45;
     _remainingSeconds = _focusMinutes * 60;
+    _newTodoEnergyRequirement = TaskEnergyRequirement.medium;
+    _newTodoEstimateMinutes = 25;
 
     const defaults = <String>[
       'Ship the hardest task first',
@@ -217,7 +337,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     setState(() {
       final rawEnergy = payload['energy'];
       if (rawEnergy is num) {
-        _energy = rawEnergy.toDouble().clamp(0, 100);
+        _energy = _snapEnergy(rawEnergy.toDouble());
       }
 
       final taskTexts = payload['task_texts'];
@@ -401,6 +521,41 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     _queueSave();
   }
 
+  Future<void> _confirmResetTimer() async {
+    if (!_hasFocusProgress) {
+      return;
+    }
+
+    final shouldReset = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          key: const ValueKey<String>('focus-reset-dialog'),
+          title: const Text('Reset focus session?'),
+          content: Text(
+            'This will clear your current timer and return it to $_focusMinutes minutes.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              key: const ValueKey<String>('focus-reset-cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: const ValueKey<String>('focus-reset-confirm'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Reset'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldReset == true && mounted) {
+      _resetTimer();
+    }
+  }
+
   void _handleSessionComplete() {
     _ticker?.cancel();
     setState(() {
@@ -434,10 +589,27 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   }
 
   void _setEnergy(double value) {
+    final snapped = _snapEnergy(value);
+    final recommendedFocus = _recommendedFocusMinutesFor(snapped);
+    final shouldAutoSyncFocus =
+        !_isRunning && _focusMinutes != recommendedFocus;
+    final energyChanged = _energy != snapped;
+    if (!energyChanged && !shouldAutoSyncFocus) {
+      return;
+    }
+
     setState(() {
-      _energy = value;
+      _energy = snapped;
+      if (shouldAutoSyncFocus) {
+        _focusMinutes = recommendedFocus;
+        _remainingSeconds = recommendedFocus * 60;
+      }
     });
     _queueSave();
+  }
+
+  void _setEnergyPreset(_EnergyPreset preset) {
+    _setEnergy(preset.value.toDouble());
   }
 
   void _setTaskDone(int index, bool value) {
@@ -447,19 +619,16 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     _queueSave();
   }
 
-  void _applyEnergyRecommendation() {
-    _setFocusMinutes(_recommendedFocusMinutes);
-    if (!mounted || _isRunning) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Focus timer synced to $_recommendedFocusMinutes minutes.',
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  void _setNewTodoEnergyRequirement(TaskEnergyRequirement requirement) {
+    setState(() {
+      _newTodoEnergyRequirement = requirement;
+    });
+  }
+
+  void _setNewTodoEstimateMinutes(int minutes) {
+    setState(() {
+      _newTodoEstimateMinutes = minutes;
+    });
   }
 
   void _addTodo() {
@@ -473,6 +642,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
       title: text,
       isDone: false,
       createdAt: DateTime.now(),
+      energyRequirement: _newTodoEnergyRequirement,
+      estimateMinutes: _newTodoEstimateMinutes,
     );
 
     setState(() {
@@ -545,7 +716,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     _ticker?.cancel();
     setState(() {
       _isRunning = false;
-      _energy = 68;
+      _energy = 65;
       _taskDone = List<bool>.filled(3, false);
       _remainingSeconds = _focusMinutes * 60;
       _logs = <SessionLog>[];
@@ -555,6 +726,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
       _frictionController.clear();
       _tomorrowController.clear();
       _todoInputController.clear();
+      _newTodoEnergyRequirement = TaskEnergyRequirement.medium;
+      _newTodoEstimateMinutes = 25;
     });
     _queueSave();
   }
@@ -567,9 +740,16 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
         .where((log) => _isSameDay(log.completedAt, DateTime.now()))
         .length;
     final sessionScore = min(4, sessions) * 5;
-    final todoScore = _todos.isEmpty
+    final totalTodoEffort = _todos.fold<int>(
+      0,
+      (sum, todo) => sum + todo.estimateMinutes,
+    );
+    final completedTodoEffort = _todos
+        .where((todo) => todo.isDone)
+        .fold<int>(0, (sum, todo) => sum + todo.estimateMinutes);
+    final todoScore = totalTodoEffort == 0
         ? 0
-        : (_completedTodoCount / _todos.length.toDouble()) * 15;
+        : (completedTodoEffort / totalTodoEffort) * 15;
     return max(
       0,
       min(
@@ -579,18 +759,39 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     );
   }
 
-  int get _recommendedFocusMinutes {
-    if (_energy >= 80) {
+  _EnergyPreset _closestEnergyPreset(double value) {
+    var closest = _energyPresets.first;
+    var closestDistance = (closest.value - value).abs();
+    for (final preset in _energyPresets.skip(1)) {
+      final distance = (preset.value - value).abs();
+      if (distance < closestDistance) {
+        closest = preset;
+        closestDistance = distance;
+      }
+    }
+    return closest;
+  }
+
+  double _snapEnergy(double value) {
+    return _closestEnergyPreset(value).value.toDouble();
+  }
+
+  _EnergyPreset get _activeEnergyPreset => _closestEnergyPreset(_energy);
+
+  int _recommendedFocusMinutesFor(double energy) {
+    if (energy >= 80) {
       return 60;
     }
-    if (_energy >= 60) {
+    if (energy >= 60) {
       return 45;
     }
-    if (_energy >= 40) {
+    if (energy >= 40) {
       return 25;
     }
     return 15;
   }
+
+  int get _recommendedFocusMinutes => _recommendedFocusMinutesFor(_energy);
 
   String get _energyGuidance {
     if (_energy >= 80) {
@@ -618,9 +819,58 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     return 'Low battery';
   }
 
+  int get _currentEnergyScore => _energy.round();
+
+  List<TodoItem> get _openTodos =>
+      _todos.where((todo) => !todo.isDone).toList(growable: false);
+
+  TodoItem? get _nextBestTodo {
+    if (_openTodos.isEmpty) {
+      return null;
+    }
+    final ranked = List<TodoItem>.from(_openTodos)
+      ..sort((a, b) => _todoSuitabilityScore(a) - _todoSuitabilityScore(b));
+    return ranked.first;
+  }
+
+  int _todoSuitabilityScore(TodoItem todo) {
+    final energyGap = max(
+      0,
+      todo.energyRequirement.minEnergy - _currentEnergyScore,
+    );
+    final timeGap = max(0, todo.estimateMinutes - _focusMinutes);
+    return (energyGap * 2) + timeGap;
+  }
+
+  bool _isEnergyFit(TodoItem todo) {
+    return _currentEnergyScore >= todo.energyRequirement.minEnergy;
+  }
+
+  bool _isTimeFit(TodoItem todo) {
+    return _focusMinutes >= todo.estimateMinutes;
+  }
+
+  String _todoConstraintHint(TodoItem todo) {
+    final energyFit = _isEnergyFit(todo);
+    final timeFit = _isTimeFit(todo);
+    if (energyFit && timeFit) {
+      return 'Fits your current energy and focus block.';
+    }
+    if (!energyFit && !timeFit) {
+      return 'Needs more energy and more uninterrupted time.';
+    }
+    if (!energyFit) {
+      return 'Needs a higher-energy window.';
+    }
+    return 'Needs a longer focus block than your current timer.';
+  }
+
   int get _openTodoCount => _todos.where((todo) => !todo.isDone).length;
 
   int get _completedTodoCount => _todos.where((todo) => todo.isDone).length;
+
+  bool get _hasFocusProgress =>
+      _isRunning || _remainingSeconds != _focusMinutes * 60;
 
   @override
   Widget build(BuildContext context) {
@@ -809,16 +1059,29 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                     ),
                   ],
                 ),
-                Slider(
-                  min: 0,
-                  max: 100,
-                  value: _energy,
-                  activeColor: const Color(0xFF1F7A6A),
-                  inactiveColor: const Color(0xFFCDCECA),
-                  label: _energy.round().toString(),
-                  onChanged: _setEnergy,
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _energyPresets.map((preset) {
+                    final selected = preset.value == _activeEnergyPreset.value;
+                    return ChoiceChip(
+                      key: ValueKey<String>('energy-preset-${preset.value}'),
+                      tooltip: preset.hint,
+                      selected: selected,
+                      selectedColor: preset.color.withValues(alpha: 0.18),
+                      side: BorderSide(
+                        color: selected
+                            ? preset.color.withValues(alpha: 0.6)
+                            : const Color(0xFFCFCFC9),
+                      ),
+                      avatar: Icon(preset.icon, size: 16, color: preset.color),
+                      label: Text('${preset.label} ${preset.value}%'),
+                      onSelected: (_) => _setEnergyPreset(preset),
+                    );
+                  }).toList(),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
@@ -843,14 +1106,14 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                           color: const Color(0xFF4D554E),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      FilledButton.tonalIcon(
-                        key: const ValueKey<String>('energy-sync-focus'),
-                        icon: const Icon(Icons.sync),
-                        onPressed: _isRunning
-                            ? null
-                            : _applyEnergyRecommendation,
-                        label: const Text('Sync Focus Timer'),
+                      const SizedBox(height: 6),
+                      Text(
+                        _isRunning
+                            ? 'Focus timer will auto-sync after this session.'
+                            : 'Focus timer auto-syncs instantly when energy changes.',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF486153),
+                        ),
                       ),
                     ],
                   ),
@@ -982,6 +1245,91 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
             ],
           ),
           const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: TaskEnergyRequirement.values
+                .map(
+                  (requirement) => ChoiceChip(
+                    key: ValueKey<String>('todo-energy-${requirement.name}'),
+                    selected: _newTodoEnergyRequirement == requirement,
+                    onSelected: (_) =>
+                        _setNewTodoEnergyRequirement(requirement),
+                    selectedColor: requirement.accent.withValues(alpha: 0.18),
+                    side: BorderSide(
+                      color: requirement.accent.withValues(alpha: 0.35),
+                    ),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(
+                          requirement.icon,
+                          size: 15,
+                          color: requirement.accent,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(requirement.label),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _todoEstimatePresets
+                .map(
+                  (minutes) => ChoiceChip(
+                    key: ValueKey<String>('todo-effort-$minutes'),
+                    selected: _newTodoEstimateMinutes == minutes,
+                    onSelected: (_) => _setNewTodoEstimateMinutes(minutes),
+                    selectedColor: const Color(0xFFE4EEF8),
+                    label: Text('$minutes min'),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'New task: ${_newTodoEnergyRequirement.label} energy, $_newTodoEstimateMinutes minutes.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF5F5B55)),
+          ),
+          if (_nextBestTodo != null) ...<Widget>[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F1EA),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFC3D4C7)),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    _isEnergyFit(_nextBestTodo!)
+                        ? Icons.bolt_rounded
+                        : Icons.schedule_rounded,
+                    color: const Color(0xFF2C6A52),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Best next: ${_nextBestTodo!.title} • ${_todoConstraintHint(_nextBestTodo!)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF395044),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
           if (_todos.isEmpty)
             Text(
               'Nothing captured yet. Add small tasks here so your Top Three stay clean.',
@@ -1007,14 +1355,20 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   }
 
   Widget _todoRow(TodoItem todo) {
+    final energyFits = _isEnergyFit(todo);
+    final timeFits = _isTimeFit(todo);
+    final fitColor = energyFits && timeFits
+        ? const Color(0xFF2E6A4E)
+        : const Color(0xFF7B5D2C);
     return Container(
       margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: todo.isDone ? const Color(0xFFE4F3EB) : const Color(0xFFF3F1EC),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Checkbox(
             value: todo.isDone,
@@ -1025,18 +1379,75 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
             onChanged: (value) => _toggleTodo(todo.id, value ?? false),
           ),
           Expanded(
-            child: Text(
-              todo.title,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                decoration: todo.isDone ? TextDecoration.lineThrough : null,
-                color: todo.isDone ? const Color(0xFF50785F) : null,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  todo.title,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    decoration: todo.isDone ? TextDecoration.lineThrough : null,
+                    color: todo.isDone ? const Color(0xFF50785F) : null,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: <Widget>[
+                    _todoTag(
+                      icon: todo.energyRequirement.icon,
+                      text: '${todo.energyRequirement.label} energy',
+                      color: todo.energyRequirement.accent,
+                    ),
+                    _todoTag(
+                      icon: Icons.timer_outlined,
+                      text: '${todo.estimateMinutes} min',
+                      color: const Color(0xFF3E6287),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _todoConstraintHint(todo),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: fitColor),
+                ),
+              ],
             ),
           ),
           IconButton(
             tooltip: 'Delete todo',
             onPressed: () => _deleteTodo(todo.id),
             icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _todoTag({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -1166,6 +1577,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                     ),
                     const SizedBox(width: 10),
                     OutlinedButton(
+                      key: const ValueKey<String>('focus-reset-button'),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
                           color: Color(0xFF1F7A6A),
@@ -1176,7 +1588,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                           vertical: 14,
                         ),
                       ),
-                      onPressed: _resetTimer,
+                      onPressed: _hasFocusProgress ? _confirmResetTimer : null,
                       child: const Text('Reset'),
                     ),
                   ],
@@ -1549,4 +1961,20 @@ class _NavItem {
 
   final String label;
   final IconData icon;
+}
+
+class _EnergyPreset {
+  const _EnergyPreset({
+    required this.value,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.color,
+  });
+
+  final int value;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final Color color;
 }

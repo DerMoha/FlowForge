@@ -36,14 +36,82 @@ void main() {
     await tester.pumpWidget(const FlowForgeApp());
 
     final todoInput = find.byKey(const ValueKey<String>('todo-input'));
-    final addButton = find.byKey(const ValueKey<String>('todo-add-button'));
 
     await tester.ensureVisible(todoInput);
     await tester.enterText(todoInput, 'Refill standing-desk water bottle');
-    await tester.ensureVisible(addButton);
-    await tester.tap(addButton);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
     expect(find.text('Refill standing-desk water bottle'), findsOneWidget);
+  });
+
+  testWidgets('can add high-effort deep-energy todo', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const FlowForgeApp());
+
+    final todoInput = find.byKey(const ValueKey<String>('todo-input'));
+    final deepChip = find.byKey(const ValueKey<String>('todo-energy-deep'));
+    final effortChip = find.byKey(const ValueKey<String>('todo-effort-90'));
+
+    await tester.ensureVisible(deepChip);
+    await tester.tap(deepChip);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(effortChip);
+    await tester.tap(effortChip);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(todoInput);
+    await tester.enterText(todoInput, 'Hard architecture refactor');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hard architecture refactor'), findsOneWidget);
+    expect(find.text('Deep energy'), findsOneWidget);
+  });
+
+  testWidgets('energy presets auto-sync the focus block', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const FlowForgeApp());
+
+    await tester.tap(find.byKey(const ValueKey<String>('energy-preset-85')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('energy-preset-25')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Focus'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('15:00'), findsOneWidget);
+  });
+
+  testWidgets('reset focus button asks for confirmation', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const FlowForgeApp());
+
+    await tester.tap(find.text('Focus'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start Session'));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('focus-reset-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('focus-reset-dialog')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('focus-reset-cancel')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('focus-reset-dialog')),
+      findsNothing,
+    );
   });
 }
