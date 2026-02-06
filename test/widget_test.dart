@@ -76,15 +76,30 @@ void main() {
   ) async {
     await tester.pumpWidget(const FlowForgeApp());
 
-    await tester.tap(find.byKey(const ValueKey<String>('energy-preset-85')));
+    final highEnergy = find.byKey(const ValueKey<String>('energy-preset-85'));
+    final lowEnergy = find.byKey(const ValueKey<String>('energy-preset-25'));
+
+    await tester.ensureVisible(highEnergy);
+    await tester.tap(highEnergy);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey<String>('energy-preset-25')));
+    await tester.ensureVisible(lowEnergy);
+    await tester.tap(lowEnergy);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Focus'));
     await tester.pumpAndSettle();
 
     expect(find.text('15:00'), findsOneWidget);
+  });
+
+  testWidgets('focus tab shows activity board', (WidgetTester tester) async {
+    await tester.pumpWidget(const FlowForgeApp());
+
+    await tester.tap(find.text('Focus'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Focus Activity'));
+    expect(find.text('Focus Activity'), findsOneWidget);
   });
 
   testWidgets('reset focus button asks for confirmation', (

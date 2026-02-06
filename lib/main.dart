@@ -222,6 +222,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
   static const String _stateKey = 'flowforge_state_v1';
   static const List<int> _minutePresets = <int>[15, 25, 45, 60];
   static const List<int> _todoEstimatePresets = <int>[10, 15, 25, 45, 60, 90];
+  static const int _activityDays = 84;
+  static const int _maxSessionLogs = 420;
   static const List<_EnergyPreset> _energyPresets = <_EnergyPreset>[
     _EnergyPreset(
       value: 25,
@@ -417,7 +419,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     }
 
     parsed.sort((a, b) => b.completedAt.compareTo(a.completedAt));
-    return parsed.take(16).toList();
+    return parsed.take(_maxSessionLogs).toList();
   }
 
   List<TodoItem> _decodeTodos(Object? rawTodos) {
@@ -564,7 +566,7 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
       _logs = <SessionLog>[
         SessionLog(completedAt: DateTime.now(), minutes: _focusMinutes),
         ..._logs,
-      ].take(16).toList();
+      ].take(_maxSessionLogs).toList();
     });
     _queueSave();
 
@@ -850,6 +852,57 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     return _focusMinutes >= todo.estimateMinutes;
   }
 
+  DateTime _startOfDay(DateTime dateTime) {
+    return DateTime(dateTime.year, dateTime.month, dateTime.day);
+  }
+
+  List<_DailySessionActivity> get _activitySeries {
+    final today = _startOfDay(DateTime.now());
+    final oldestDay = today.subtract(const Duration(days: _activityDays - 1));
+    final byDay = <DateTime, _DailySessionActivity>{};
+
+    for (final log in _logs) {
+      final day = _startOfDay(log.completedAt);
+      if (day.isBefore(oldestDay) || day.isAfter(today)) {
+        continue;
+      }
+      final current = byDay[day];
+      if (current == null) {
+        byDay[day] = _DailySessionActivity(
+          day: day,
+          sessions: 1,
+          minutes: log.minutes,
+        );
+      } else {
+        byDay[day] = _DailySessionActivity(
+          day: day,
+          sessions: current.sessions + 1,
+          minutes: current.minutes + log.minutes,
+        );
+      }
+    }
+
+    return List<_DailySessionActivity>.generate(_activityDays, (index) {
+      final day = oldestDay.add(Duration(days: index));
+      return byDay[day] ??
+          _DailySessionActivity(day: day, sessions: 0, minutes: 0);
+    });
+  }
+
+  int get _sessionsThisWeek {
+    final today = _startOfDay(DateTime.now());
+    final start = today.subtract(Duration(days: today.weekday - 1));
+    return _logs.where((log) => !log.completedAt.isBefore(start)).length;
+  }
+
+  int get _minutesThisWeek {
+    final today = _startOfDay(DateTime.now());
+    final start = today.subtract(Duration(days: today.weekday - 1));
+    return _logs
+        .where((log) => !log.completedAt.isBefore(start))
+        .fold<int>(0, (sum, log) => sum + log.minutes);
+  }
+
   String _todoConstraintHint(TodoItem todo) {
     final energyFit = _isEnergyFit(todo);
     final timeFit = _isTimeFit(todo);
@@ -1037,7 +1090,6 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
           _panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1121,7 +1173,6 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
           _panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1630,6 +1681,8 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
             ),
           ),
           const SizedBox(height: 14),
+          _activityBoard(),
+          const SizedBox(height: 14),
           _panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1675,6 +1728,118 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
                   ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityBoard() {
+    final series = _activitySeries;
+    final maxSessions = series.fold<int>(0, (maxValue, item) {
+      return item.sessions > maxValue ? item.sessions : maxValue;
+    });
+    final weeks = <List<_DailySessionActivity>>[];
+    for (var index = 0; index < series.length; index += 7) {
+      final end = min(index + 7, series.length);
+      weeks.add(series.sublist(index, end));
+    }
+
+    return _panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Focus Activity',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Git-style board for the last 12 weeks. $_sessionsThisWeek sessions this week ($_minutesThisWeek min).',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF5D5B56)),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: List<Widget>.generate(weeks.length, (weekIndex) {
+                final week = weeks[weekIndex];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Column(
+                    children: List<Widget>.generate(7, (dayIndex) {
+                      if (dayIndex >= week.length) {
+                        return const SizedBox(width: 14, height: 14);
+                      }
+                      final day = week[dayIndex];
+                      final cellColor = _activityColorForDay(
+                        day.sessions,
+                        maxSessions,
+                      );
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Tooltip(
+                          message:
+                              '${_formatShortDate(day.day)} · ${day.sessions} '
+                              '${day.sessions == 1 ? 'session' : 'sessions'} · '
+                              '${day.minutes} min',
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: cellColor,
+                              borderRadius: BorderRadius.circular(3),
+                              border: Border.all(
+                                color: Colors.black.withValues(alpha: 0.08),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: <Widget>[
+              Text(
+                'Less',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: const Color(0xFF6B6963),
+                ),
+              ),
+              const SizedBox(width: 6),
+              ...List<Widget>.generate(5, (index) {
+                final sampleSessions = maxSessions == 0
+                    ? index
+                    : ((maxSessions * index) / 4).round();
+                return Container(
+                  margin: const EdgeInsets.only(left: 4),
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: _activityColorForDay(sampleSessions, maxSessions),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+              const SizedBox(width: 6),
+              Text(
+                'More',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: const Color(0xFF6B6963),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1928,6 +2093,41 @@ class _FlowForgeHomeState extends State<FlowForgeHome> {
     return '$hour:$minute $marker';
   }
 
+  Color _activityColorForDay(int sessions, int maxSessions) {
+    if (sessions <= 0 || maxSessions <= 0) {
+      return const Color(0xFFE8E5DD);
+    }
+    final normalized = sessions / maxSessions;
+    if (normalized >= 0.85) {
+      return const Color(0xFF1F7A6A);
+    }
+    if (normalized >= 0.6) {
+      return const Color(0xFF3B9B84);
+    }
+    if (normalized >= 0.35) {
+      return const Color(0xFF74B99A);
+    }
+    return const Color(0xFFBBDCCB);
+  }
+
+  String _formatShortDate(DateTime dateTime) {
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+  }
+
   String _formatFullDate(DateTime dateTime) {
     const weekdays = <String>[
       'Monday',
@@ -1977,4 +2177,16 @@ class _EnergyPreset {
   final String hint;
   final IconData icon;
   final Color color;
+}
+
+class _DailySessionActivity {
+  const _DailySessionActivity({
+    required this.day,
+    required this.sessions,
+    required this.minutes,
+  });
+
+  final DateTime day;
+  final int sessions;
+  final int minutes;
 }
