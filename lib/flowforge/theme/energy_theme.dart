@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'typography.dart';
+
 class EnergyPalette {
   const EnergyPalette({
     required this.gradientStart,
@@ -128,6 +130,7 @@ class EnergyTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      textTheme: FlowForgeTypography.primaryTextTheme(brightness),
       scaffoldBackgroundColor: Colors.transparent,
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
