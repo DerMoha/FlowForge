@@ -2,7 +2,6 @@ import '../models/achievement.dart';
 import '../models/session_log.dart';
 import '../models/todo_item.dart';
 import '../models/user_profile.dart';
-import '../models/task_energy_requirement.dart';
 
 /// Service for evaluating achievement criteria and detecting unlocks
 class AchievementService {

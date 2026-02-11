@@ -45,7 +45,7 @@ class Project {
     return {
       'id': id,
       'name': name,
-      'color': color.value,
+      'color': color.toARGB32(),
       'icon': icon.codePoint,
       'created_at': createdAt.toIso8601String(),
       'deadline': deadline?.toIso8601String(),

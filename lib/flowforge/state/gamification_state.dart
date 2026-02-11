@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_profile.dart';
-import '../models/achievement.dart';
 import '../models/task_energy_requirement.dart';
 
 /// Manages XP, levels, achievements, and streaks

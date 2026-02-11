@@ -33,7 +33,7 @@ class FocusNotificationService {
     );
 
     try {
-      await _notifications.initialize(settings: initializationSettings);
+      await _notifications.initialize(initializationSettings);
       _initialized = true;
       await _requestPermissions();
     } catch (_) {
@@ -112,10 +112,10 @@ class FocusNotificationService {
 
     try {
       await _notifications.show(
-        id: _activeSessionNotificationId,
-        title: 'Focus session running',
-        body: body,
-        notificationDetails: details,
+        _activeSessionNotificationId,
+        'Focus session running',
+        body,
+        details,
       );
     } catch (_) {
       // Keep timer flow resilient if notification API is unavailable.
@@ -128,7 +128,7 @@ class FocusNotificationService {
     }
 
     try {
-      await _notifications.cancel(id: _activeSessionNotificationId);
+      await _notifications.cancel(_activeSessionNotificationId);
     } catch (_) {
       // Best-effort cleanup.
     }
@@ -160,12 +160,12 @@ class FocusNotificationService {
     );
 
     try {
-      await _notifications.cancel(id: _activeSessionNotificationId);
+      await _notifications.cancel(_activeSessionNotificationId);
       await _notifications.show(
-        id: _sessionCompleteNotificationId,
-        title: 'Focus session complete',
-        body: 'Logged $focusMinutes focused minutes.',
-        notificationDetails: details,
+        _sessionCompleteNotificationId,
+        'Focus session complete',
+        'Logged $focusMinutes focused minutes.',
+        details,
       );
     } catch (_) {
       // Completion alert is a nice-to-have and should never crash the app.

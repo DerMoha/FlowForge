@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:image/image.dart' as img;
 
 import '../models/user_profile.dart';
 import '../models/achievement.dart';

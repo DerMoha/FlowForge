@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/analytics_snapshot.dart';
-import '../services/analytics_service.dart';
 
 /// Manages analytics, insights, and predictions
 class AnalyticsState extends ChangeNotifier {
