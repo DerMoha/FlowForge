@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'state/app_state.dart';
+import 'state/energy_state.dart';
+import 'state/timer_state.dart';
+import 'state/task_state.dart';
+import 'state/gamification_state.dart';
+import 'state/profile_state.dart';
+import 'state/analytics_state.dart';
 import 'theme/energy_theme.dart';
 import 'widgets/calm_scaffold.dart';
 
@@ -13,6 +20,8 @@ class FlowForgeApp extends StatefulWidget {
 
 class _FlowForgeAppState extends State<FlowForgeApp> {
   ThemeMode _themeMode = ThemeMode.system;
+
+  // Keep legacy state for now during migration
   late final FlowForgeState _state;
 
   @override
@@ -47,15 +56,26 @@ class _FlowForgeAppState extends State<FlowForgeApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'FlowForge',
-      theme: EnergyTheme.buildTheme(_state.energy, Brightness.light),
-      darkTheme: EnergyTheme.buildTheme(_state.energy, Brightness.dark),
-      themeMode: _themeMode,
-      home: CalmScaffold(
-        state: _state,
-        onToggleTheme: _toggleThemeMode,
+    // Wrap with MultiProvider for new architecture
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => EnergyState()..init()),
+        ChangeNotifierProvider(create: (_) => TimerState()..init()),
+        ChangeNotifierProvider(create: (_) => TaskState()..init()),
+        ChangeNotifierProvider(create: (_) => GamificationState()..init()),
+        ChangeNotifierProvider(create: (_) => ProfileState()..init()),
+        ChangeNotifierProvider(create: (_) => AnalyticsState()..init()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'FlowForge',
+        theme: EnergyTheme.buildTheme(_state.energy, Brightness.light),
+        darkTheme: EnergyTheme.buildTheme(_state.energy, Brightness.dark),
+        themeMode: _themeMode,
+        home: CalmScaffold(
+          state: _state,
+          onToggleTheme: _toggleThemeMode,
+        ),
       ),
     );
   }
