@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'home_page.dart';
+import 'state/app_state.dart';
+import 'theme/energy_theme.dart';
+import 'widgets/calm_scaffold.dart';
 
 class FlowForgeApp extends StatefulWidget {
   const FlowForgeApp({super.key});
@@ -11,12 +13,31 @@ class FlowForgeApp extends StatefulWidget {
 
 class _FlowForgeAppState extends State<FlowForgeApp> {
   ThemeMode _themeMode = ThemeMode.system;
+  late final FlowForgeState _state;
+
+  @override
+  void initState() {
+    super.initState();
+    _state = FlowForgeState();
+    _state.init();
+    _state.addListener(_onStateChanged);
+  }
+
+  @override
+  void dispose() {
+    _state.removeListener(_onStateChanged);
+    _state.dispose();
+    super.dispose();
+  }
+
+  void _onStateChanged() {
+    setState(() {});
+  }
 
   void _toggleThemeMode() {
     final platformBrightness =
         WidgetsBinding.instance.platformDispatcher.platformBrightness;
-    final currentlyDark =
-        _themeMode == ThemeMode.dark ||
+    final currentlyDark = _themeMode == ThemeMode.dark ||
         (_themeMode == ThemeMode.system &&
             platformBrightness == Brightness.dark);
     setState(() {
@@ -24,69 +45,18 @@ class _FlowForgeAppState extends State<FlowForgeApp> {
     });
   }
 
-  ThemeData _buildTheme(Brightness brightness) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF1F7A6A),
-      brightness: brightness,
-    );
-    final isDark = brightness == Brightness.dark;
-
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
-      snackBarTheme: const SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.8),
-        ),
-        selectedColor: colorScheme.primaryContainer,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: isDark
-            ? colorScheme.surfaceContainerHigh
-            : colorScheme.surfaceContainerLowest,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'FlowForge',
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
+      theme: EnergyTheme.buildTheme(_state.energy, Brightness.light),
+      darkTheme: EnergyTheme.buildTheme(_state.energy, Brightness.dark),
       themeMode: _themeMode,
-      home: FlowForgeHome(onToggleTheme: _toggleThemeMode),
+      home: CalmScaffold(
+        state: _state,
+        onToggleTheme: _toggleThemeMode,
+      ),
     );
   }
 }

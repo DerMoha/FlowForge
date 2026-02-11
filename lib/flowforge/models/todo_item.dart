@@ -1,4 +1,5 @@
 import 'task_energy_requirement.dart';
+import 'recurrence_rule.dart';
 
 class TodoItem {
   const TodoItem({
@@ -8,6 +9,14 @@ class TodoItem {
     required this.createdAt,
     required this.energyRequirement,
     required this.estimateMinutes,
+    this.projectId,
+    this.blockedBy,
+    this.tags,
+    this.priority,
+    this.deadline,
+    this.recurrence,
+    this.completedAt,
+    this.actualMinutes,
   });
 
   final String id;
@@ -17,6 +26,35 @@ class TodoItem {
   final TaskEnergyRequirement energyRequirement;
   final int estimateMinutes;
 
+  // New fields for advanced features
+  final String? projectId;
+  final List<String>? blockedBy; // Task IDs that block this task
+  final List<String>? tags;
+  final int? priority; // 1-5 scale (1=highest)
+  final DateTime? deadline;
+  final RecurrenceRule? recurrence;
+  final DateTime? completedAt;
+  final int? actualMinutes; // Actual time spent
+
+  /// Is this task blocked by incomplete dependencies?
+  bool isBlocked(List<TodoItem> allTodos) {
+    if (blockedBy == null || blockedBy!.isEmpty) return false;
+    return allTodos.any((todo) =>
+        blockedBy!.contains(todo.id) && !todo.isDone);
+  }
+
+  /// Is this task overdue?
+  bool get isOverdue {
+    if (deadline == null || isDone) return false;
+    return DateTime.now().isAfter(deadline!);
+  }
+
+  /// Get time estimation accuracy (1.0 = perfect, <1 = faster, >1 = slower)
+  double? get estimationAccuracy {
+    if (actualMinutes == null || estimateMinutes == 0) return null;
+    return actualMinutes! / estimateMinutes;
+  }
+
   TodoItem copyWith({
     String? id,
     String? title,
@@ -24,6 +62,22 @@ class TodoItem {
     DateTime? createdAt,
     TaskEnergyRequirement? energyRequirement,
     int? estimateMinutes,
+    String? projectId,
+    List<String>? blockedBy,
+    List<String>? tags,
+    int? priority,
+    DateTime? deadline,
+    RecurrenceRule? recurrence,
+    DateTime? completedAt,
+    int? actualMinutes,
+    bool clearProjectId = false,
+    bool clearBlockedBy = false,
+    bool clearTags = false,
+    bool clearPriority = false,
+    bool clearDeadline = false,
+    bool clearRecurrence = false,
+    bool clearCompletedAt = false,
+    bool clearActualMinutes = false,
   }) {
     return TodoItem(
       id: id ?? this.id,
@@ -32,6 +86,14 @@ class TodoItem {
       createdAt: createdAt ?? this.createdAt,
       energyRequirement: energyRequirement ?? this.energyRequirement,
       estimateMinutes: estimateMinutes ?? this.estimateMinutes,
+      projectId: clearProjectId ? null : (projectId ?? this.projectId),
+      blockedBy: clearBlockedBy ? null : (blockedBy ?? this.blockedBy),
+      tags: clearTags ? null : (tags ?? this.tags),
+      priority: clearPriority ? null : (priority ?? this.priority),
+      deadline: clearDeadline ? null : (deadline ?? this.deadline),
+      recurrence: clearRecurrence ? null : (recurrence ?? this.recurrence),
+      completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
+      actualMinutes: clearActualMinutes ? null : (actualMinutes ?? this.actualMinutes),
     );
   }
 
@@ -43,6 +105,14 @@ class TodoItem {
       'created_at': createdAt.toIso8601String(),
       'energy_requirement': energyRequirement.storageValue,
       'estimate_minutes': estimateMinutes,
+      'project_id': projectId,
+      'blocked_by': blockedBy,
+      'tags': tags,
+      'priority': priority,
+      'deadline': deadline?.toIso8601String(),
+      'recurrence': recurrence?.toJson(),
+      'completed_at': completedAt?.toIso8601String(),
+      'actual_minutes': actualMinutes,
     };
   }
 
@@ -77,6 +147,24 @@ class TodoItem {
       estimateMinutes: rawEstimateMinutes is int
           ? rawEstimateMinutes.clamp(10, 240)
           : 25,
+      projectId: json['project_id'] as String?,
+      blockedBy: (json['blocked_by'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      tags: (json['tags'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      priority: json['priority'] as int?,
+      deadline: json['deadline'] != null
+          ? DateTime.tryParse(json['deadline'] as String)
+          : null,
+      recurrence: json['recurrence'] != null
+          ? RecurrenceRule.fromJson(json['recurrence'] as Map<String, dynamic>)
+          : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.tryParse(json['completed_at'] as String)
+          : null,
+      actualMinutes: json['actual_minutes'] as int?,
     );
   }
 }
