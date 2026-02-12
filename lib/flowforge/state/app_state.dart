@@ -37,6 +37,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
   late int remainingSeconds;
   late TaskEnergyRequirement newTodoEnergyRequirement;
   late int newTodoEstimateMinutes;
+  DateTime? newTodoDeadline;
 
   bool isRunning = false;
   bool showTodoComposerDetails = false;
@@ -200,8 +201,9 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
 
     isRunning = payload['is_running'] == true;
     final rawSessionEndEpochMs = payload['session_end_epoch_ms'];
-    sessionEndEpochMs =
-        rawSessionEndEpochMs is int ? rawSessionEndEpochMs : null;
+    sessionEndEpochMs = rawSessionEndEpochMs is int
+        ? rawSessionEndEpochMs
+        : null;
 
     if (isRunning && sessionEndEpochMs != null) {
       final remainingFromDeadline =
@@ -235,17 +237,16 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
 
     if (completedWhileAway) {
       queueSave();
-      _emitSnack(
-        'Focus session finished while you were away. Session logged.',
-      );
+      _emitSnack('Focus session finished while you were away. Session logged.');
     }
   }
 
   Future<void> _saveState() async {
     final payload = <String, dynamic>{
       'energy': energy,
-      'task_texts':
-          taskControllers.map((controller) => controller.text).toList(),
+      'task_texts': taskControllers
+          .map((controller) => controller.text)
+          .toList(),
       'task_done': taskDone,
       'focus_minutes': focusMinutes,
       'remaining_seconds': remainingSeconds,
@@ -477,8 +478,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
   void setEnergy(double value) {
     final snapped = _snapEnergy(value);
     final recommendedFocus = _recommendedFocusMinutesFor(snapped);
-    final shouldAutoSyncFocus =
-        !isRunning && focusMinutes != recommendedFocus;
+    final shouldAutoSyncFocus = !isRunning && focusMinutes != recommendedFocus;
     final energyChanged = energy != snapped;
     if (!energyChanged && !shouldAutoSyncFocus) {
       return;
@@ -634,6 +634,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       createdAt: DateTime.now(),
       energyRequirement: newTodoEnergyRequirement,
       estimateMinutes: newTodoEstimateMinutes,
+      deadline: newTodoDeadline,
     );
 
     final updatedTodos = <TodoItem>[...todos, item];
@@ -645,10 +646,21 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     todoInputController.clear();
     hasCustomTodoEstimate = false;
     newTodoEstimateMinutes = estimatedTodoMinutesFor(newTodoEnergyRequirement);
+    newTodoDeadline = null;
     showTodoComposerDetails = false;
     notifyListeners();
     todoInputFocusNode.unfocus();
     queueSave();
+  }
+
+  void setNewTodoDeadline(DateTime? deadline) {
+    newTodoDeadline = deadline;
+    notifyListeners();
+  }
+
+  void clearNewTodoDeadline() {
+    newTodoDeadline = null;
+    notifyListeners();
   }
 
   void setFocusedTodo(String id) {
@@ -679,8 +691,9 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     final updatedTodos = List<TodoItem>.from(todos)..[index] = updated;
     todos = updatedTodos;
 
-    final preferredId =
-        value ? (focusedTodoId == id ? null : focusedTodoId) : id;
+    final preferredId = value
+        ? (focusedTodoId == id ? null : focusedTodoId)
+        : id;
     focusedTodoId = pickFocusedTodoId(updatedTodos, preferredId: preferredId);
     notifyListeners();
     queueSave();
@@ -703,10 +716,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     }
     final updatedTodos = todos.where((todo) => !todo.isDone).toList();
     todos = updatedTodos;
-    focusedTodoId = pickFocusedTodoId(
-      updatedTodos,
-      preferredId: focusedTodoId,
-    );
+    focusedTodoId = pickFocusedTodoId(updatedTodos, preferredId: focusedTodoId);
     showFinishedTodos = false;
     notifyListeners();
     queueSave();
@@ -733,8 +743,9 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     openTodoList.sort((a, b) {
-      final scoreCompare =
-          todoSuitabilityScore(a).compareTo(todoSuitabilityScore(b));
+      final scoreCompare = todoSuitabilityScore(
+        a,
+      ).compareTo(todoSuitabilityScore(b));
       if (scoreCompare != 0) {
         return scoreCompare;
       }
@@ -782,8 +793,9 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       todos.where((todo) => !todo.isDone).toList(growable: false);
 
   List<TodoItem> get completedTodos {
-    final completed =
-        todos.where((todo) => todo.isDone).toList(growable: false);
+    final completed = todos
+        .where((todo) => todo.isDone)
+        .toList(growable: false);
     completed.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return completed;
   }
@@ -805,8 +817,9 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
         if (aFocused && !bFocused) return -1;
         if (bFocused && !aFocused) return 1;
 
-        final scoreCompare =
-            todoSuitabilityScore(a).compareTo(todoSuitabilityScore(b));
+        final scoreCompare = todoSuitabilityScore(
+          a,
+        ).compareTo(todoSuitabilityScore(b));
         if (scoreCompare != 0) return scoreCompare;
         return a.createdAt.compareTo(b.createdAt);
       });
@@ -825,14 +838,18 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
   // ---------------------------------------------------------------------------
   int get momentumScore {
     final totalTodos = todos.length;
-    final completionScore =
-        totalTodos == 0 ? 0 : (completedTodoCount / totalTodos) * 40;
+    final completionScore = totalTodos == 0
+        ? 0
+        : (completedTodoCount / totalTodos) * 40;
     final energyScore = energy * 0.25;
-    final sessions =
-        logs.where((log) => isSameDay(log.completedAt, DateTime.now())).length;
+    final sessions = logs
+        .where((log) => isSameDay(log.completedAt, DateTime.now()))
+        .length;
     final sessionScore = min(4, sessions) * 5;
-    final totalTodoEffort =
-        todos.fold<int>(0, (sum, todo) => sum + todo.estimateMinutes);
+    final totalTodoEffort = todos.fold<int>(
+      0,
+      (sum, todo) => sum + todo.estimateMinutes,
+    );
     final completedTodoEffort = todos
         .where((todo) => todo.isDone)
         .fold<int>(0, (sum, todo) => sum + todo.estimateMinutes);
@@ -955,6 +972,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     newTodoEnergyRequirement = TaskEnergyRequirement.medium;
     hasCustomTodoEstimate = false;
     newTodoEstimateMinutes = estimatedTodoMinutesFor(newTodoEnergyRequirement);
+    newTodoDeadline = null;
     notifyListeners();
     todoInputFocusNode.unfocus();
     queueSave();
