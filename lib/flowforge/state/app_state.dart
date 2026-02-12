@@ -8,6 +8,7 @@ import '../models/daily_session_activity.dart';
 import '../models/energy_preset.dart';
 import '../models/session_log.dart';
 import '../models/task_energy_requirement.dart';
+import '../models/task_status.dart';
 import '../models/todo_item.dart';
 import '../utils/date_helpers.dart';
 import 'persistence.dart';
@@ -634,6 +635,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       createdAt: DateTime.now(),
       energyRequirement: newTodoEnergyRequirement,
       estimateMinutes: newTodoEstimateMinutes,
+      status: TaskStatus.backlog,
       deadline: newTodoDeadline,
     );
 

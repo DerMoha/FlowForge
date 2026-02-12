@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/todo_item.dart';
 import '../models/task_energy_requirement.dart';
+import '../models/task_status.dart';
 
 /// Manages tasks/todos CRUD, filtering, and sorting
 class TaskState extends ChangeNotifier {
@@ -18,7 +19,8 @@ class TaskState extends ChangeNotifier {
   bool _showFinishedTodos = false;
   bool _showTodoComposerDetails = false;
 
-  TaskEnergyRequirement _newTodoEnergyRequirement = TaskEnergyRequirement.medium;
+  TaskEnergyRequirement _newTodoEnergyRequirement =
+      TaskEnergyRequirement.medium;
   int _newTodoEstimateMinutes = 25;
   bool _hasCustomTodoEstimate = false;
 
@@ -26,7 +28,8 @@ class TaskState extends ChangeNotifier {
   String? get focusedTodoId => _focusedTodoId;
   bool get showFinishedTodos => _showFinishedTodos;
   bool get showTodoComposerDetails => _showTodoComposerDetails;
-  TaskEnergyRequirement get newTodoEnergyRequirement => _newTodoEnergyRequirement;
+  TaskEnergyRequirement get newTodoEnergyRequirement =>
+      _newTodoEnergyRequirement;
   int get newTodoEstimateMinutes => _newTodoEstimateMinutes;
   bool get hasCustomTodoEstimate => _hasCustomTodoEstimate;
 
@@ -34,7 +37,9 @@ class TaskState extends ChangeNotifier {
       _todos.where((todo) => !todo.isDone).toList(growable: false);
 
   List<TodoItem> get completedTodos {
-    final completed = _todos.where((todo) => todo.isDone).toList(growable: false);
+    final completed = _todos
+        .where((todo) => todo.isDone)
+        .toList(growable: false);
     completed.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return completed;
   }
@@ -74,8 +79,11 @@ class TaskState extends ChangeNotifier {
         if (aFocused && !bFocused) return -1;
         if (bFocused && !aFocused) return 1;
 
-        final scoreCompare = _todoSuitabilityScore(a, currentEnergy, focusMinutes)
-            .compareTo(_todoSuitabilityScore(b, currentEnergy, focusMinutes));
+        final scoreCompare = _todoSuitabilityScore(
+          a,
+          currentEnergy,
+          focusMinutes,
+        ).compareTo(_todoSuitabilityScore(b, currentEnergy, focusMinutes));
         if (scoreCompare != 0) return scoreCompare;
         return a.createdAt.compareTo(b.createdAt);
       });
@@ -83,7 +91,11 @@ class TaskState extends ChangeNotifier {
   }
 
   /// Calculate suitability score for a task
-  int _todoSuitabilityScore(TodoItem todo, int currentEnergy, int focusMinutes) {
+  int _todoSuitabilityScore(
+    TodoItem todo,
+    int currentEnergy,
+    int focusMinutes,
+  ) {
     final energyGap = max(0, todo.energyRequirement.minEnergy - currentEnergy);
     final timeGap = max(0, todo.estimateMinutes - focusMinutes);
     return (energyGap * 2) + timeGap;
@@ -100,7 +112,11 @@ class TaskState extends ChangeNotifier {
   }
 
   /// Get constraint hint for a task
-  String todoConstraintHint(TodoItem todo, int currentEnergy, int focusMinutes) {
+  String todoConstraintHint(
+    TodoItem todo,
+    int currentEnergy,
+    int focusMinutes,
+  ) {
     final energyFit = isEnergyFit(todo, currentEnergy);
     final timeFit = isTimeFit(todo, focusMinutes);
 
@@ -129,6 +145,7 @@ class TaskState extends ChangeNotifier {
       createdAt: DateTime.now(),
       energyRequirement: _newTodoEnergyRequirement,
       estimateMinutes: _newTodoEstimateMinutes,
+      status: TaskStatus.backlog,
     );
 
     _todos = [..._todos, item];
@@ -136,7 +153,10 @@ class TaskState extends ChangeNotifier {
 
     todoInputController.clear();
     _hasCustomTodoEstimate = false;
-    _newTodoEstimateMinutes = _estimatedTodoMinutesFor(_newTodoEnergyRequirement, 65);
+    _newTodoEstimateMinutes = _estimatedTodoMinutesFor(
+      _newTodoEnergyRequirement,
+      65,
+    );
     _showTodoComposerDetails = false;
 
     notifyListeners();
@@ -160,7 +180,9 @@ class TaskState extends ChangeNotifier {
 
     _todos = List<TodoItem>.from(_todos)..[index] = updated;
 
-    final preferredId = value ? (_focusedTodoId == id ? null : _focusedTodoId) : id;
+    final preferredId = value
+        ? (_focusedTodoId == id ? null : _focusedTodoId)
+        : id;
     _focusedTodoId = _pickFocusedTodoId(preferredId: preferredId);
 
     notifyListeners();
@@ -230,7 +252,8 @@ class TaskState extends ChangeNotifier {
   }
 
   void collapseTodoComposerIfIdle() {
-    if (todoInputFocusNode.hasFocus || todoInputController.text.trim().isNotEmpty) {
+    if (todoInputFocusNode.hasFocus ||
+        todoInputController.text.trim().isNotEmpty) {
       return;
     }
     if (!_showTodoComposerDetails) return;
@@ -263,7 +286,10 @@ class TaskState extends ChangeNotifier {
   }
 
   /// Estimate todo minutes based on requirement and current energy
-  int _estimatedTodoMinutesFor(TaskEnergyRequirement requirement, int currentEnergy) {
+  int _estimatedTodoMinutesFor(
+    TaskEnergyRequirement requirement,
+    int currentEnergy,
+  ) {
     final baseMinutes = switch (requirement) {
       TaskEnergyRequirement.low => 15,
       TaskEnergyRequirement.medium => 25,
@@ -316,14 +342,17 @@ class TaskState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
 
       final todosJson = prefs.getStringList('task_todos') ?? [];
-      _todos = todosJson.map((json) {
-        try {
-          // In real implementation, properly parse JSON
-          return null;
-        } catch (_) {
-          return null;
-        }
-      }).whereType<TodoItem>().toList();
+      _todos = todosJson
+          .map((json) {
+            try {
+              // In real implementation, properly parse JSON
+              return null;
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<TodoItem>()
+          .toList();
 
       _focusedTodoId = prefs.getString('task_focused_todo_id');
       _showFinishedTodos = prefs.getBool('task_show_finished_todos') ?? false;

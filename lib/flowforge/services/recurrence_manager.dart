@@ -16,9 +16,9 @@ class RecurrenceManager {
     final newTasks = <TodoItem>[];
 
     // Find recurring task templates
-    final recurringTemplates = existingTasks.where(
-      (task) => task.recurrence != null && !task.isDone,
-    ).toList();
+    final recurringTemplates = existingTasks
+        .where((task) => task.recurrence != null && !task.isDone)
+        .toList();
 
     for (final template in recurringTemplates) {
       final rule = template.recurrence!;
@@ -26,11 +26,12 @@ class RecurrenceManager {
       // Check if this recurrence is due
       if (rule.matches(currentDate)) {
         // Check if task already exists for this date
-        final alreadyExists = existingTasks.any((task) =>
-          task.title == template.title &&
-          task.createdAt.year == currentDate.year &&
-          task.createdAt.month == currentDate.month &&
-          task.createdAt.day == currentDate.day
+        final alreadyExists = existingTasks.any(
+          (task) =>
+              task.title == template.title &&
+              task.createdAt.year == currentDate.year &&
+              task.createdAt.month == currentDate.month &&
+              task.createdAt.day == currentDate.day,
         );
 
         if (!alreadyExists) {
@@ -52,6 +53,7 @@ class RecurrenceManager {
       createdAt: date,
       energyRequirement: template.energyRequirement,
       estimateMinutes: template.estimateMinutes,
+      status: template.status,
       projectId: template.projectId,
       tags: template.tags,
       priority: template.priority,

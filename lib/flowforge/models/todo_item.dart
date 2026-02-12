@@ -1,4 +1,5 @@
 import 'task_energy_requirement.dart';
+import 'task_status.dart';
 import 'recurrence_rule.dart';
 
 class TodoItem {
@@ -9,6 +10,7 @@ class TodoItem {
     required this.createdAt,
     required this.energyRequirement,
     required this.estimateMinutes,
+    required this.status,
     this.projectId,
     this.blockedBy,
     this.tags,
@@ -25,6 +27,7 @@ class TodoItem {
   final DateTime createdAt;
   final TaskEnergyRequirement energyRequirement;
   final int estimateMinutes;
+  final TaskStatus status;
 
   // New fields for advanced features
   final String? projectId;
@@ -39,8 +42,7 @@ class TodoItem {
   /// Is this task blocked by incomplete dependencies?
   bool isBlocked(List<TodoItem> allTodos) {
     if (blockedBy == null || blockedBy!.isEmpty) return false;
-    return allTodos.any((todo) =>
-        blockedBy!.contains(todo.id) && !todo.isDone);
+    return allTodos.any((todo) => blockedBy!.contains(todo.id) && !todo.isDone);
   }
 
   /// Is this task overdue?
@@ -62,6 +64,7 @@ class TodoItem {
     DateTime? createdAt,
     TaskEnergyRequirement? energyRequirement,
     int? estimateMinutes,
+    TaskStatus? status,
     String? projectId,
     List<String>? blockedBy,
     List<String>? tags,
@@ -86,6 +89,7 @@ class TodoItem {
       createdAt: createdAt ?? this.createdAt,
       energyRequirement: energyRequirement ?? this.energyRequirement,
       estimateMinutes: estimateMinutes ?? this.estimateMinutes,
+      status: status ?? this.status,
       projectId: clearProjectId ? null : (projectId ?? this.projectId),
       blockedBy: clearBlockedBy ? null : (blockedBy ?? this.blockedBy),
       tags: clearTags ? null : (tags ?? this.tags),
@@ -93,7 +97,9 @@ class TodoItem {
       deadline: clearDeadline ? null : (deadline ?? this.deadline),
       recurrence: clearRecurrence ? null : (recurrence ?? this.recurrence),
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
-      actualMinutes: clearActualMinutes ? null : (actualMinutes ?? this.actualMinutes),
+      actualMinutes: clearActualMinutes
+          ? null
+          : (actualMinutes ?? this.actualMinutes),
     );
   }
 
@@ -105,6 +111,7 @@ class TodoItem {
       'created_at': createdAt.toIso8601String(),
       'energy_requirement': energyRequirement.storageValue,
       'estimate_minutes': estimateMinutes,
+      'status': status.storageValue,
       'project_id': projectId,
       'blocked_by': blockedBy,
       'tags': tags,
@@ -147,13 +154,12 @@ class TodoItem {
       estimateMinutes: rawEstimateMinutes is int
           ? rawEstimateMinutes.clamp(10, 240)
           : 25,
+      status: TaskStatusX.fromStorageValue(json['status'] as String?),
       projectId: json['project_id'] as String?,
       blockedBy: (json['blocked_by'] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
-      tags: (json['tags'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList(),
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
       priority: json['priority'] as int?,
       deadline: json['deadline'] != null
           ? DateTime.tryParse(json['deadline'] as String)
