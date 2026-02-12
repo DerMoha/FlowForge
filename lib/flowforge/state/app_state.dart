@@ -49,6 +49,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
   String shutdownNote = '';
   List<SessionLog> logs = <SessionLog>[];
   List<TodoItem> todos = <TodoItem>[];
+  DateTime? lastResetDate;
   Timer? _ticker;
   Timer? _saveDebounce;
   int? _lastSessionNotificationBucket;
@@ -194,6 +195,13 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     todos = FlowForgeStorage.decodeTodos(payload['todos']);
     showFinishedTodos = payload['show_finished_todos'] == true;
 
+    final rawLastReset = payload['last_reset_date'];
+    if (rawLastReset is String) {
+      lastResetDate = DateTime.tryParse(rawLastReset);
+    }
+    // Reset today tasks if it's a new day
+    _resetTodayTasksIfNewDay();
+
     final savedFocusTodoId = payload['focused_todo_id'];
     focusedTodoId = pickFocusedTodoId(
       todos,
@@ -261,6 +269,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       'show_finished_todos': showFinishedTodos,
       'logs': logs.map((log) => log.toJson()).toList(),
       'todos': todos.map((todo) => todo.toJson()).toList(),
+      'last_reset_date': lastResetDate?.toIso8601String(),
     };
     await FlowForgeStorage.saveRaw(payload);
   }
@@ -728,6 +737,69 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     showFinishedTodos = !showFinishedTodos;
     notifyListeners();
     queueSave();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Kanban task status management
+  // ---------------------------------------------------------------------------
+  void moveTaskToStatus(String taskId, TaskStatus newStatus) {
+    final index = todos.indexWhere((todo) => todo.id == taskId);
+    if (index < 0) return;
+
+    final existing = todos[index];
+    if (existing.status == newStatus) return;
+
+    final updated = existing.copyWith(status: newStatus);
+    final updatedTodos = List<TodoItem>.from(todos)..[index] = updated;
+    todos = updatedTodos;
+
+    // If moving to done, also mark isDone
+    if (newStatus == TaskStatus.done && !existing.isDone) {
+      todos = todos
+          .map((t) => t.id == taskId ? t.copyWith(isDone: true) : t)
+          .toList();
+    }
+    // If moving away from done, unmark isDone
+    if (newStatus != TaskStatus.done && existing.isDone) {
+      todos = todos
+          .map((t) => t.id == taskId ? t.copyWith(isDone: false) : t)
+          .toList();
+    }
+
+    focusedTodoId = pickFocusedTodoId(todos, preferredId: focusedTodoId);
+    notifyListeners();
+    queueSave();
+  }
+
+  List<TodoItem> get todayTodos => todos
+      .where((todo) => todo.status == TaskStatus.today && !todo.isDone)
+      .toList();
+
+  List<TodoItem> get backlogTodos => todos
+      .where((todo) => todo.status == TaskStatus.backlog && !todo.isDone)
+      .toList();
+
+  List<TodoItem> get doneTodos => todos
+      .where((todo) => todo.isDone || todo.status == TaskStatus.done)
+      .toList();
+
+  int get todayTodoCount => todayTodos.length;
+
+  void _resetTodayTasksIfNewDay() {
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+
+    if (lastResetDate == null || !isSameDay(lastResetDate!, today)) {
+      // Move all 'today' tasks back to 'backlog'
+      todos = todos.map((todo) {
+        if (todo.status == TaskStatus.today && !todo.isDone) {
+          return todo.copyWith(status: TaskStatus.backlog);
+        }
+        return todo;
+      }).toList();
+      lastResetDate = todayStart;
+      queueSave();
+    }
   }
 
   // ---------------------------------------------------------------------------
