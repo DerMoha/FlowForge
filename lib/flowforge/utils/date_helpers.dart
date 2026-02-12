@@ -1,5 +1,88 @@
+enum DueGroup { overdue, today, thisWeek, later }
+
 bool isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+DueGroup groupByDueDate(DateTime? deadline) {
+  if (deadline == null) return DueGroup.later;
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
+
+  if (deadlineDay.isBefore(today)) return DueGroup.overdue;
+  if (isSameDay(deadlineDay, today)) return DueGroup.today;
+
+  final weekFromNow = today.add(const Duration(days: 7));
+  if (deadlineDay.isBefore(weekFromNow)) return DueGroup.thisWeek;
+
+  return DueGroup.later;
+}
+
+String formatDueDate(DateTime? deadline) {
+  if (deadline == null) return '';
+
+  final group = groupByDueDate(deadline);
+  switch (group) {
+    case DueGroup.overdue:
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
+      final daysOverdue = today.difference(deadlineDay).inDays;
+      if (daysOverdue == 1) return 'Overdue 1 day';
+      return 'Overdue $daysOverdue days';
+    case DueGroup.today:
+      return 'Today';
+    case DueGroup.thisWeek:
+      final now = DateTime.now();
+      final tomorrow = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).add(const Duration(days: 1));
+      if (isSameDay(deadline, tomorrow)) return 'Tomorrow';
+      return formatShortMonthDay(deadline);
+    case DueGroup.later:
+      return formatShortMonthDay(deadline);
+  }
+}
+
+String formatShortMonthDay(DateTime dateTime) {
+  const months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[dateTime.month - 1]} ${dateTime.day}';
+}
+
+String formatCompactDate(DateTime dateTime) {
+  const weekdays = <String>['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${weekdays[dateTime.weekday - 1]}, ${months[dateTime.month - 1]} ${dateTime.day}';
 }
 
 String formatDuration(int seconds) {
@@ -25,20 +108,45 @@ String formatTime(DateTime dateTime) {
 
 String formatShortDate(DateTime dateTime) {
   const months = <String>[
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
 }
 
 String formatFullDate(DateTime dateTime) {
   const weekdays = <String>[
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-    'Friday', 'Saturday', 'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ];
   const months = <String>[
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   return '${weekdays[dateTime.weekday - 1]}, ${months[dateTime.month - 1]} ${dateTime.day}';
 }
