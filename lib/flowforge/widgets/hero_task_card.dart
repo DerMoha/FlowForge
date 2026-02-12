@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/task_energy_requirement.dart';
 import '../models/todo_item.dart';
 import '../state/app_state.dart';
+import '../utils/date_helpers.dart';
 
 class HeroTaskCard extends StatefulWidget {
   const HeroTaskCard({super.key, required this.state});
@@ -102,8 +103,13 @@ class _HeroTaskCardState extends State<HeroTaskCard>
     final hint = widget.state.todoConstraintHint(todo);
     final energyFit = widget.state.isEnergyFit(todo);
     final timeFit = widget.state.isTimeFit(todo);
-    final fitColor =
-        energyFit && timeFit ? scheme.primary : scheme.tertiary;
+    final fitColor = energyFit && timeFit ? scheme.primary : scheme.tertiary;
+    final isOverdue = todo.isOverdue;
+    final dueDateText = formatDueDate(todo.deadline);
+
+    final borderColor = isOverdue
+        ? scheme.error.withValues(alpha: 0.5)
+        : scheme.primary.withValues(alpha: 0.4);
 
     return Container(
       width: double.infinity,
@@ -113,13 +119,12 @@ class _HeroTaskCardState extends State<HeroTaskCard>
           alpha: isDark ? 0.75 : 0.9,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: scheme.primary.withValues(alpha: 0.4),
-          width: 1.5,
-        ),
+        border: Border.all(color: borderColor, width: 1.5),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: scheme.primary.withValues(alpha: shadowOpacity),
+            color: isOverdue
+                ? scheme.error.withValues(alpha: shadowOpacity * 0.7)
+                : scheme.primary.withValues(alpha: shadowOpacity),
             blurRadius: 16,
             spreadRadius: 1,
           ),
@@ -128,20 +133,31 @@ class _HeroTaskCardState extends State<HeroTaskCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            'Next Action',
-            style: textTheme.labelMedium?.copyWith(
-              color: scheme.primary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                'Next Action',
+                style: textTheme.labelMedium?.copyWith(
+                  color: isOverdue ? scheme.error : scheme.primary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              if (dueDateText.isNotEmpty)
+                _tag(
+                  icon: isOverdue
+                      ? Icons.warning_amber_rounded
+                      : Icons.schedule,
+                  text: dueDateText,
+                  color: isOverdue ? scheme.error : scheme.secondary,
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
             todo.title,
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -161,10 +177,7 @@ class _HeroTaskCardState extends State<HeroTaskCard>
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            hint,
-            style: textTheme.labelSmall?.copyWith(color: fitColor),
-          ),
+          Text(hint, style: textTheme.labelSmall?.copyWith(color: fitColor)),
         ],
       ),
     );
@@ -183,9 +196,7 @@ class _HeroTaskCardState extends State<HeroTaskCard>
           alpha: isDark ? 0.7 : 0.85,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: <Widget>[
