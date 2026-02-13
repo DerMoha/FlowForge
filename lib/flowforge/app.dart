@@ -9,7 +9,7 @@ import 'state/gamification_state.dart';
 import 'state/profile_state.dart';
 import 'state/analytics_state.dart';
 import 'theme/energy_theme.dart';
-import 'widgets/calm_scaffold.dart';
+import 'widgets/main_navigation.dart';
 
 class FlowForgeApp extends StatefulWidget {
   const FlowForgeApp({super.key});
@@ -46,7 +46,8 @@ class _FlowForgeAppState extends State<FlowForgeApp> {
   void _toggleThemeMode() {
     final platformBrightness =
         WidgetsBinding.instance.platformDispatcher.platformBrightness;
-    final currentlyDark = _themeMode == ThemeMode.dark ||
+    final currentlyDark =
+        _themeMode == ThemeMode.dark ||
         (_themeMode == ThemeMode.system &&
             platformBrightness == Brightness.dark);
     setState(() {
@@ -72,10 +73,7 @@ class _FlowForgeAppState extends State<FlowForgeApp> {
         theme: EnergyTheme.buildTheme(_state.energy, Brightness.light),
         darkTheme: EnergyTheme.buildTheme(_state.energy, Brightness.dark),
         themeMode: _themeMode,
-        home: CalmScaffold(
-          state: _state,
-          onToggleTheme: _toggleThemeMode,
-        ),
+        home: MainNavigation(state: _state, onToggleTheme: _toggleThemeMode),
       ),
     );
   }
