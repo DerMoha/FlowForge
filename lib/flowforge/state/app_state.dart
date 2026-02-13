@@ -768,6 +768,33 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     queueSave();
   }
 
+  void updateTodo({
+    required String id,
+    required String title,
+    required TaskEnergyRequirement energyRequirement,
+    required int estimateMinutes,
+    required TaskStatus status,
+    DateTime? deadline,
+  }) {
+    final index = todos.indexWhere((todo) => todo.id == id);
+    if (index < 0) return;
+
+    final existing = todos[index];
+    final updated = existing.copyWith(
+      title: title,
+      energyRequirement: energyRequirement,
+      estimateMinutes: estimateMinutes,
+      status: status,
+      deadline: deadline,
+      isDone: status == TaskStatus.done,
+    );
+
+    todos = List<TodoItem>.from(todos)..[index] = updated;
+    focusedTodoId = pickFocusedTodoId(todos, preferredId: focusedTodoId);
+    notifyListeners();
+    queueSave();
+  }
+
   void moveTaskToStatus(String taskId, TaskStatus newStatus) {
     final index = todos.indexWhere((todo) => todo.id == taskId);
     if (index < 0) return;

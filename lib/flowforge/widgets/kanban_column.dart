@@ -72,6 +72,7 @@ class _KanbanColumnState extends State<KanbanColumn> {
                 ...widget.todos.map(
                   (todo) => KanbanTaskCard(
                     todo: todo,
+                    state: widget.state,
                     onDelete: () => widget.state.deleteTodo(todo.id),
                   ),
                 ),
