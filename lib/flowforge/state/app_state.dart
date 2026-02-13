@@ -742,6 +742,32 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
   // ---------------------------------------------------------------------------
   // Kanban task status management
   // ---------------------------------------------------------------------------
+  void addTodoFromKanban({
+    required String title,
+    required TaskEnergyRequirement energyRequirement,
+    required int estimateMinutes,
+    DateTime? deadline,
+  }) {
+    final item = TodoItem(
+      id: '${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(9999)}',
+      title: title,
+      isDone: false,
+      createdAt: DateTime.now(),
+      energyRequirement: energyRequirement,
+      estimateMinutes: estimateMinutes,
+      status: TaskStatus.backlog,
+      deadline: deadline,
+    );
+
+    todos = <TodoItem>[...todos, item];
+    focusedTodoId = pickFocusedTodoId(
+      todos,
+      preferredId: focusedTodoId ?? item.id,
+    );
+    notifyListeners();
+    queueSave();
+  }
+
   void moveTaskToStatus(String taskId, TaskStatus newStatus) {
     final index = todos.indexWhere((todo) => todo.id == taskId);
     if (index < 0) return;
