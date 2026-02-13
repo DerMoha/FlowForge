@@ -70,11 +70,7 @@ class _KanbanColumnState extends State<KanbanColumn> {
                 if (widget.showWarning && widget.todos.length > 5)
                   _buildWarning(context, scheme),
                 ...widget.todos.map(
-                  (todo) => KanbanTaskCard(
-                    todo: todo,
-                    state: widget.state,
-                    onDelete: () => widget.state.deleteTodo(todo.id),
-                  ),
+                  (todo) => _buildSwipeableCard(todo, context, scheme),
                 ),
                 if (widget.todos.isEmpty) _buildEmptyState(context, scheme),
               ],
@@ -83,6 +79,130 @@ class _KanbanColumnState extends State<KanbanColumn> {
         );
       },
     );
+  }
+
+  Widget _buildSwipeableCard(
+    TodoItem todo,
+    BuildContext context,
+    ColorScheme scheme,
+  ) {
+    final swipeConfig = _getSwipeConfig();
+
+    if (swipeConfig == null) {
+      return KanbanTaskCard(
+        todo: todo,
+        state: widget.state,
+        onDelete: () => widget.state.deleteTodo(todo.id),
+      );
+    }
+
+    return Dismissible(
+      key: Key(todo.id),
+      direction: swipeConfig.direction,
+      background: _buildSwipeBackground(
+        context,
+        scheme,
+        swipeConfig.backgroundColor,
+        swipeConfig.icon,
+        swipeConfig.label,
+        Alignment.centerLeft,
+      ),
+      secondaryBackground: swipeConfig.secondaryTarget != null
+          ? _buildSwipeBackground(
+              context,
+              scheme,
+              swipeConfig.secondaryBackgroundColor ??
+                  swipeConfig.backgroundColor,
+              swipeConfig.secondaryIcon ?? swipeConfig.icon,
+              swipeConfig.secondaryLabel ?? swipeConfig.label,
+              Alignment.centerRight,
+            )
+          : null,
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          widget.state.moveTaskToStatus(todo.id, swipeConfig.targetStatus);
+        } else if (direction == DismissDirection.endToStart &&
+            swipeConfig.secondaryTarget != null) {
+          widget.state.moveTaskToStatus(todo.id, swipeConfig.secondaryTarget!);
+        }
+        return false;
+      },
+      child: KanbanTaskCard(
+        todo: todo,
+        state: widget.state,
+        onDelete: () => widget.state.deleteTodo(todo.id),
+      ),
+    );
+  }
+
+  Widget _buildSwipeBackground(
+    BuildContext context,
+    ColorScheme scheme,
+    Color backgroundColor,
+    IconData icon,
+    String label,
+    Alignment alignment,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: backgroundColor.withValues(alpha: isDark ? 0.3 : 0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Align(
+        alignment: alignment,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, color: backgroundColor, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: backgroundColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  _SwipeConfig? _getSwipeConfig() {
+    switch (widget.status) {
+      case TaskStatus.today:
+        return _SwipeConfig(
+          direction: DismissDirection.horizontal,
+          targetStatus: TaskStatus.done,
+          backgroundColor: Colors.green,
+          icon: Icons.check_circle_outline,
+          label: 'Done',
+          secondaryTarget: TaskStatus.backlog,
+          secondaryBackgroundColor: Colors.orange,
+          secondaryIcon: Icons.inventory_2_outlined,
+          secondaryLabel: 'Backlog',
+        );
+      case TaskStatus.backlog:
+        return _SwipeConfig(
+          direction: DismissDirection.startToEnd,
+          targetStatus: TaskStatus.today,
+          backgroundColor: Colors.blue,
+          icon: Icons.today_outlined,
+          label: 'Today',
+        );
+      case TaskStatus.done:
+        return _SwipeConfig(
+          direction: DismissDirection.endToStart,
+          targetStatus: TaskStatus.backlog,
+          backgroundColor: Colors.orange,
+          icon: Icons.inventory_2_outlined,
+          label: 'Backlog',
+        );
+    }
   }
 
   Widget _buildHeader(
@@ -202,4 +322,28 @@ class _KanbanColumnState extends State<KanbanColumn> {
         return 'No completed tasks yet';
     }
   }
+}
+
+class _SwipeConfig {
+  const _SwipeConfig({
+    required this.direction,
+    required this.targetStatus,
+    required this.backgroundColor,
+    required this.icon,
+    required this.label,
+    this.secondaryTarget,
+    this.secondaryBackgroundColor,
+    this.secondaryIcon,
+    this.secondaryLabel,
+  });
+
+  final DismissDirection direction;
+  final TaskStatus targetStatus;
+  final Color backgroundColor;
+  final IconData icon;
+  final String label;
+  final TaskStatus? secondaryTarget;
+  final Color? secondaryBackgroundColor;
+  final IconData? secondaryIcon;
+  final String? secondaryLabel;
 }
