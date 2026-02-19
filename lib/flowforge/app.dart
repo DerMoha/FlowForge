@@ -5,7 +5,7 @@ import 'state/app_state.dart';
 import 'state/energy_state.dart';
 import 'state/timer_state.dart';
 import 'state/task_state.dart';
-import 'state/gamification_state.dart';
+
 import 'state/profile_state.dart';
 import 'state/analytics_state.dart';
 import 'theme/energy_theme.dart';
@@ -63,7 +63,6 @@ class _FlowForgeAppState extends State<FlowForgeApp> {
         ChangeNotifierProvider(create: (_) => EnergyState()..init()),
         ChangeNotifierProvider(create: (_) => TimerState()..init()),
         ChangeNotifierProvider(create: (_) => TaskState()..init()),
-        ChangeNotifierProvider(create: (_) => GamificationState()..init()),
         ChangeNotifierProvider(create: (_) => ProfileState()..init()),
         ChangeNotifierProvider(create: (_) => AnalyticsState()..init()),
       ],

@@ -9,7 +9,8 @@ class AnalyticsState extends ChangeNotifier {
   final List<EnergyDataPoint> _energyHistory = [];
   final List<String> _insights = [];
 
-  Map<DateTime, AnalyticsSnapshot> get snapshots => Map.unmodifiable(_snapshots);
+  Map<DateTime, AnalyticsSnapshot> get snapshots =>
+      Map.unmodifiable(_snapshots);
   List<EnergyDataPoint> get energyHistory => List.unmodifiable(_energyHistory);
   List<String> get insights => List.unmodifiable(_insights);
 
@@ -56,8 +57,7 @@ class AnalyticsState extends ChangeNotifier {
   /// Get snapshots for date range
   List<AnalyticsSnapshot> getSnapshotsInRange(DateTime start, DateTime end) {
     return _snapshots.entries
-        .where((entry) =>
-            !entry.key.isBefore(start) && !entry.key.isAfter(end))
+        .where((entry) => !entry.key.isBefore(start) && !entry.key.isAfter(end))
         .map((entry) => entry.value)
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
@@ -86,15 +86,17 @@ class AnalyticsState extends ChangeNotifier {
     final dayOfWeek = time.weekday;
 
     // Get data points for this hour and day of week
-    final relevantPoints = _energyHistory.where((point) =>
-      point.hourOfDay == hour && point.dayOfWeek == dayOfWeek
-    ).toList();
+    final relevantPoints = _energyHistory
+        .where(
+          (point) => point.hourOfDay == hour && point.dayOfWeek == dayOfWeek,
+        )
+        .toList();
 
     if (relevantPoints.isEmpty) {
       // Fall back to just hour
-      final hourPoints = _energyHistory.where((point) =>
-        point.hourOfDay == hour
-      ).toList();
+      final hourPoints = _energyHistory
+          .where((point) => point.hourOfDay == hour)
+          .toList();
 
       if (hourPoints.isEmpty) return null;
 
@@ -115,7 +117,8 @@ class AnalyticsState extends ChangeNotifier {
     for (final snapshot in _snapshots.values) {
       if (snapshot.firstSessionTime != null) {
         final hour = snapshot.firstSessionTime!.hour;
-        hourScores[hour] = (hourScores[hour] ?? 0) + snapshot.totalMinutes.toDouble();
+        hourScores[hour] =
+            (hourScores[hour] ?? 0) + snapshot.totalMinutes.toDouble();
       }
     }
 
@@ -157,6 +160,37 @@ class AnalyticsState extends ChangeNotifier {
     );
 
     return totalMinutes / days;
+  }
+
+  int get totalSessions {
+    return _snapshots.values.fold<int>(0, (sum, s) => sum + s.totalSessions);
+  }
+
+  int get totalMinutes {
+    return _snapshots.values.fold<int>(0, (sum, s) => sum + s.totalMinutes);
+  }
+
+  int get totalTasksCompleted {
+    return _snapshots.values.fold<int>(0, (sum, s) => sum + s.tasksCompleted);
+  }
+
+  int get currentStreak {
+    if (_snapshots.isEmpty) return 0;
+
+    int streak = 0;
+    var date = DateTime.now();
+    final today = DateTime(date.year, date.month, date.day);
+
+    while (true) {
+      final snapshot = _snapshots[today];
+      if (snapshot == null || snapshot.totalSessions == 0) {
+        break;
+      }
+      streak++;
+      date = date.subtract(const Duration(days: 1));
+    }
+
+    return streak;
   }
 
   /// Load state from storage

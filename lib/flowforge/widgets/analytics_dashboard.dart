@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/analytics_state.dart';
-import '../state/gamification_state.dart';
+
 import '../analytics/energy_predictor.dart';
 import 'energy_flow_chart.dart';
 import 'glass_card.dart';
@@ -67,11 +67,8 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AnalyticsState, GamificationState>(
-      builder: (context, analytics, gamification, child) {
-        final profile = gamification.profile;
-        final stats = profile.lifetimeStats;
-
+    return Consumer<AnalyticsState>(
+      builder: (context, analytics, child) {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -84,7 +81,7 @@ class _OverviewTab extends StatelessWidget {
                     child: _MetricCard(
                       icon: Icons.play_circle_rounded,
                       label: 'Total Sessions',
-                      value: '${stats.totalSessions}',
+                      value: '${analytics.totalSessions}',
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -92,7 +89,7 @@ class _OverviewTab extends StatelessWidget {
                     child: _MetricCard(
                       icon: Icons.timer_rounded,
                       label: 'Total Hours',
-                      value: '${(stats.totalMinutes / 60).toStringAsFixed(1)}',
+                      value: '${(analytics.totalMinutes / 60).toStringAsFixed(1)}',
                     ),
                   ),
                 ],
@@ -104,7 +101,7 @@ class _OverviewTab extends StatelessWidget {
                     child: _MetricCard(
                       icon: Icons.check_circle_rounded,
                       label: 'Tasks Done',
-                      value: '${stats.totalTasksCompleted}',
+                      value: '${analytics.totalTasksCompleted}',
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -112,7 +109,7 @@ class _OverviewTab extends StatelessWidget {
                     child: _MetricCard(
                       icon: Icons.local_fire_department_rounded,
                       label: 'Current Streak',
-                      value: '${profile.currentStreak}',
+                      value: '${analytics.currentStreak}',
                     ),
                   ),
                 ],
@@ -144,6 +141,7 @@ class _OverviewTab extends StatelessWidget {
       },
     );
   }
+}
 }
 
 class _TrendsTab extends StatelessWidget {
@@ -268,9 +266,7 @@ class _TrendsTab extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: theme.colorScheme.primary),
         const SizedBox(width: 12),
-        Expanded(
-          child: Text(label, style: theme.textTheme.bodyMedium),
-        ),
+        Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
         Text(
           value,
           style: theme.textTheme.titleMedium?.copyWith(
@@ -293,7 +289,8 @@ class _InsightsTab extends StatelessWidget {
         final insights = EnergyPredictor.instance.analyzePatterns(
           analytics.energyHistory,
         );
-        final recommendations = EnergyPredictor.instance.generateRecommendations(insights);
+        final recommendations = EnergyPredictor.instance
+            .generateRecommendations(insights);
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -376,7 +373,9 @@ class _PredictionsTab extends StatelessWidget {
     return Consumer<AnalyticsState>(
       builder: (context, analytics, child) {
         final now = DateTime.now();
-        final prediction = analytics.predictEnergyForTime(now.add(const Duration(hours: 1)));
+        final prediction = analytics.predictEnergyForTime(
+          now.add(const Duration(hours: 1)),
+        );
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -399,10 +398,11 @@ class _PredictionsTab extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       prediction != null ? '$prediction' : '--',
-                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      style: Theme.of(context).textTheme.displayMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -483,12 +483,7 @@ class _InsightCard extends StatelessWidget {
             size: 24,
           ),
           const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              insight,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
+          Expanded(child: Text(insight, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );

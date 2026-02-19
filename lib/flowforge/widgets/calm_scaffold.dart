@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../models/energy_preset.dart';
 import '../state/app_state.dart';
 import '../utils/date_helpers.dart';
 import 'activity_heatmap.dart';
 import 'ambient_gradient_background.dart';
 import 'collapsible_section.dart';
-import 'energy_floating_indicator.dart';
 import 'focus_mode_transition.dart';
 import 'focus_timer_ring.dart';
 import 'hero_task_card.dart';
 import 'session_stats_bar.dart';
-import 'shutdown_ritual_section.dart';
 import 'task_input_bar.dart';
 import 'task_river.dart';
 
@@ -31,7 +30,6 @@ class CalmScaffold extends StatefulWidget {
 class _CalmScaffoldState extends State<CalmScaffold> {
   bool _focusExpanded = false;
   bool _activityExpanded = false;
-  bool _reflectExpanded = false;
 
   FlowForgeState get _state => widget.state;
 
@@ -145,31 +143,11 @@ class _CalmScaffoldState extends State<CalmScaffold> {
                               ),
                             ),
                           ),
-                          FocusModeTransition(
-                            isFocusMode: isFocusMode,
-                            child: CollapsibleSection(
-                              title: 'Reflect',
-                              icon: Icons.nights_stay_rounded,
-                              isExpanded: _reflectExpanded,
-                              onToggle: () => setState(
-                                () => _reflectExpanded = !_reflectExpanded,
-                              ),
-                              child: ShutdownRitualSection(state: _state),
-                            ),
-                          ),
                         ],
                       ),
                     ),
                   ),
                 ],
-              ),
-              Positioned(
-                bottom: 20,
-                right: 20,
-                child: FocusModeTransition(
-                  isFocusMode: isFocusMode,
-                  child: EnergyFloatingIndicator(state: _state),
-                ),
               ),
             ],
           ),
@@ -182,6 +160,7 @@ class _CalmScaffoldState extends State<CalmScaffold> {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final active = _state.activeEnergyPreset;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
@@ -195,11 +174,192 @@ class _CalmScaffoldState extends State<CalmScaffold> {
               color: scheme.onSurface,
             ),
           ),
-          IconButton.filledTonal(
-            tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
-            onPressed: widget.onToggleTheme,
-            icon: Icon(
-              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              GestureDetector(
+                onTap: () => _showEnergySheet(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: active.color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: active.color.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(active.icon, size: 16, color: active.color),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${active.value}%',
+                        style: TextStyle(
+                          color: active.color,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                tooltip: isDark
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode',
+                onPressed: widget.onToggleTheme,
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEnergySheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _EnergySheet(state: _state),
+    );
+  }
+}
+
+class _EnergySheet extends StatelessWidget {
+  const _EnergySheet({required this.state});
+
+  final FlowForgeState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final active = state.activeEnergyPreset;
+    final activeIndex = energyPresets.indexWhere(
+      (p) => p.value == active.value,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(active.icon, color: active.color, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'Energy Level',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            active.hint,
+            style: textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildBatteryBar(context, activeIndex),
+          const SizedBox(height: 16),
+          Text(
+            '${active.value}% energy',
+            style: textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: active.color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBatteryBar(BuildContext context, int activeIndex) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Row(
+              children: List<Widget>.generate(energyPresets.length, (index) {
+                final preset = energyPresets[index];
+                final lit = index <= activeIndex;
+                final selected = index == activeIndex;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: index == energyPresets.length - 1 ? 0 : 4,
+                    ),
+                    child: Tooltip(
+                      message: '${preset.label} ${preset.value}%',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () {
+                            state.setEnergyPreset(preset);
+                            Navigator.of(context).pop();
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: lit
+                                  ? preset.color.withValues(
+                                      alpha: selected ? 0.95 : 0.55,
+                                    )
+                                  : scheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: lit
+                                    ? preset.color.withValues(alpha: 0.85)
+                                    : scheme.outlineVariant.withValues(
+                                        alpha: 0.4,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            width: 5,
+            height: 18,
+            decoration: BoxDecoration(
+              color: scheme.outlineVariant.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
         ],
