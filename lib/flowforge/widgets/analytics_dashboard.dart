@@ -89,7 +89,8 @@ class _OverviewTab extends StatelessWidget {
                     child: _MetricCard(
                       icon: Icons.timer_rounded,
                       label: 'Total Hours',
-                      value: '${(analytics.totalMinutes / 60).toStringAsFixed(1)}',
+                      value:
+                          '${(analytics.totalMinutes / 60).toStringAsFixed(1)}',
                     ),
                   ),
                 ],
@@ -129,9 +130,7 @@ class _OverviewTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    EnergyFlowChart(
-                      energyData: analytics.energyHistory,
-                    ),
+                    EnergyFlowChart(energyData: analytics.energyHistory),
                   ],
                 ),
               ),
@@ -141,7 +140,6 @@ class _OverviewTab extends StatelessWidget {
       },
     );
   }
-}
 }
 
 class _TrendsTab extends StatelessWidget {
