@@ -747,6 +747,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     required TaskEnergyRequirement energyRequirement,
     required int estimateMinutes,
     DateTime? deadline,
+    String? projectId,
   }) {
     final item = TodoItem(
       id: '${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(9999)}',
@@ -757,6 +758,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       estimateMinutes: estimateMinutes,
       status: TaskStatus.backlog,
       deadline: deadline,
+      projectId: projectId,
     );
 
     todos = <TodoItem>[...todos, item];

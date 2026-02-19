@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/task_energy_requirement.dart';
 import '../models/task_status.dart';
 import '../state/app_state.dart';
+import '../state/project_state.dart';
 import '../utils/date_helpers.dart';
 import 'kanban_column.dart';
 
@@ -20,6 +22,7 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
   TaskEnergyRequirement _energyRequirement = TaskEnergyRequirement.medium;
   int _estimateMinutes = 25;
   DateTime? _deadline;
+  String? _projectId;
   bool _showDetails = false;
 
   @override
@@ -48,10 +51,12 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
       energyRequirement: _energyRequirement,
       estimateMinutes: _estimateMinutes,
       deadline: _deadline,
+      projectId: _projectId,
     );
 
     _taskController.clear();
     _deadline = null;
+    _projectId = null;
     setState(() => _showDetails = false);
     Navigator.pop(context);
   }
@@ -61,6 +66,7 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
     _energyRequirement = TaskEnergyRequirement.medium;
     _estimateMinutes = 25;
     _deadline = null;
+    _projectId = null;
     _showDetails = false;
 
     showModalBottomSheet(
@@ -295,6 +301,64 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
                     onPressed: () => setState(() => _deadline = null),
                   ),
               ],
+            ),
+            const SizedBox(height: 12),
+            Consumer<ProjectState>(
+              builder: (context, projectState, child) {
+                final projects = projectState.projects;
+                if (projects.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Project',
+                      style: textTheme.labelMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: <Widget>[
+                        ChoiceChip(
+                          selected: _projectId == null,
+                          onSelected: (_) => setState(() => _projectId = null),
+                          label: const Text('None'),
+                        ),
+                        ...projects.map((project) {
+                          return ChoiceChip(
+                            selected: _projectId == project.id,
+                            onSelected: (_) =>
+                                setState(() => _projectId = project.id),
+                            selectedColor: project.color.withValues(
+                              alpha: 0.18,
+                            ),
+                            side: BorderSide(
+                              color: project.color.withValues(alpha: 0.35),
+                            ),
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: project.color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(project.name),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ],
