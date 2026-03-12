@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/task_energy_requirement.dart';
 import '../models/task_status.dart';
 import '../models/todo_item.dart';
 import '../state/app_state.dart';
+import '../state/project_state.dart';
 import '../utils/date_helpers.dart';
+import 'task_detail_sections.dart';
 
 class KanbanTaskCard extends StatelessWidget {
   const KanbanTaskCard({
@@ -143,6 +146,23 @@ class KanbanTaskCard extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
+            Consumer<ProjectState>(
+              builder: (context, projectState, _) {
+                final project = todo.projectId != null
+                    ? projectState.getProject(todo.projectId!)
+                    : null;
+                if (project == null) return const SizedBox.shrink();
+                return Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: project.color,
+                    shape: BoxShape.circle,
+                  ),
+                );
+              },
+            ),
             Icon(
               todo.energyRequirement.icon,
               size: 18,
@@ -161,20 +181,7 @@ class KanbanTaskCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (onDelete != null)
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: 14,
-                  onPressed: onDelete,
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+            Icon(Icons.edit_outlined, size: 16, color: scheme.onSurfaceVariant),
           ],
         ),
         const SizedBox(height: 8),
@@ -193,6 +200,42 @@ class KanbanTaskCard extends StatelessWidget {
                 icon: isOverdue ? Icons.warning_amber_rounded : Icons.schedule,
                 text: dueDateText,
                 color: isOverdue ? scheme.error : scheme.tertiary,
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            ActionChip(
+              avatar: const Icon(Icons.edit_outlined, size: 16),
+              label: const Text('Edit'),
+              onPressed: () => _showEditSheet(context),
+            ),
+            if (todo.status == TaskStatus.backlog)
+              ActionChip(
+                avatar: const Icon(Icons.today_rounded, size: 16),
+                label: const Text('Move to Today'),
+                onPressed: () =>
+                    state.moveTaskToStatus(todo.id, TaskStatus.today),
+              ),
+            if (todo.status == TaskStatus.today)
+              ActionChip(
+                avatar: const Icon(Icons.inventory_2_rounded, size: 16),
+                label: const Text('Backlog'),
+                onPressed: () =>
+                    state.moveTaskToStatus(todo.id, TaskStatus.backlog),
+              ),
+            if (!todo.isDone)
+              ActionChip(
+                avatar: const Icon(
+                  Icons.check_circle_outline_rounded,
+                  size: 16,
+                ),
+                label: const Text('Done'),
+                onPressed: () =>
+                    state.moveTaskToStatus(todo.id, TaskStatus.done),
               ),
           ],
         ),
@@ -249,6 +292,7 @@ class _EditTaskSheetState extends State<_EditTaskSheet> {
   late int _estimateMinutes;
   late TaskStatus _status;
   DateTime? _deadline;
+  String? _projectId;
 
   @override
   void initState() {
@@ -258,6 +302,7 @@ class _EditTaskSheetState extends State<_EditTaskSheet> {
     _estimateMinutes = widget.todo.estimateMinutes;
     _status = widget.todo.status;
     _deadline = widget.todo.deadline;
+    _projectId = widget.todo.projectId;
   }
 
   @override
@@ -277,6 +322,9 @@ class _EditTaskSheetState extends State<_EditTaskSheet> {
       estimateMinutes: _estimateMinutes,
       status: _status,
       deadline: _deadline,
+      projectId: _projectId,
+      clearDeadline: _deadline == null,
+      clearProjectId: _projectId == null,
     );
     Navigator.pop(context);
   }
@@ -341,137 +389,33 @@ class _EditTaskSheetState extends State<_EditTaskSheet> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Status',
-              style: textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+              'Edit task',
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: TaskStatus.values.map((s) {
-                return ChoiceChip(
-                  selected: _status == s,
-                  onSelected: (_) => setState(() => _status = s),
-                  selectedColor: _getStatusColor(
-                    s,
-                    scheme,
-                  ).withValues(alpha: 0.18),
-                  side: BorderSide(
-                    color: _getStatusColor(s, scheme).withValues(alpha: 0.35),
-                  ),
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Icon(
-                        _getStatusIcon(s),
-                        size: 14,
-                        color: _getStatusColor(s, scheme),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(s.label),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             Text(
-              'Energy Level',
-              style: textTheme.labelMedium?.copyWith(
+              'Keep the title clear, then update where it belongs and when it is due.',
+              style: textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: TaskEnergyRequirement.values.map((req) {
-                return ChoiceChip(
-                  selected: _energyRequirement == req,
-                  onSelected: (_) => setState(() => _energyRequirement = req),
-                  selectedColor: req.accent.withValues(alpha: 0.18),
-                  side: BorderSide(color: req.accent.withValues(alpha: 0.35)),
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Icon(req.icon, size: 14, color: req.accent),
-                      const SizedBox(width: 4),
-                      Text(req.label),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Time Estimate',
-              style: textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: FlowForgeState.todoEstimatePresets.map((min) {
-                return ChoiceChip(
-                  selected: _estimateMinutes == min,
-                  onSelected: (_) => setState(() => _estimateMinutes = min),
-                  label: Text('$min min'),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Due Date',
-              style: textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                _buildDueChip('Today', DateTime.now()),
-                _buildDueChip(
-                  'Tomorrow',
-                  DateTime.now().add(const Duration(days: 1)),
-                ),
-                _buildDueChip(
-                  'This Week',
-                  DateTime.now().add(const Duration(days: 7)),
-                ),
-                ActionChip(
-                  avatar: Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                  label: const Text('Custom'),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _deadline ?? DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) setState(() => _deadline = picked);
-                  },
-                ),
-                if (_deadline != null)
-                  ActionChip(
-                    avatar: Icon(
-                      Icons.close,
-                      size: 16,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    label: const Text('Clear'),
-                    onPressed: () => setState(() => _deadline = null),
-                  ),
-              ],
+            const SizedBox(height: 16),
+            TaskDetailSections(
+              keyPrefix: 'task-edit',
+              status: _status,
+              onStatusChanged: (value) => setState(() => _status = value),
+              energyRequirement: _energyRequirement,
+              onEnergyChanged: (value) =>
+                  setState(() => _energyRequirement = value),
+              estimateMinutes: _estimateMinutes,
+              onEstimateChanged: (value) =>
+                  setState(() => _estimateMinutes = value),
+              deadline: _deadline,
+              onDeadlineChanged: (value) => setState(() => _deadline = value),
+              projectId: _projectId,
+              onProjectChanged: (value) => setState(() => _projectId = value),
             ),
             const SizedBox(height: 20),
             Row(
@@ -492,44 +436,5 @@ class _EditTaskSheetState extends State<_EditTaskSheet> {
         ),
       ),
     );
-  }
-
-  Widget _buildDueChip(String label, DateTime date) {
-    final scheme = Theme.of(context).colorScheme;
-    final isSelected = _deadline != null && isSameDay(_deadline!, date);
-
-    return ChoiceChip(
-      selected: isSelected,
-      onSelected: (_) => setState(() => _deadline = date),
-      selectedColor: scheme.primaryContainer,
-      side: BorderSide(
-        color: isSelected
-            ? scheme.primary.withValues(alpha: 0.5)
-            : scheme.outline.withValues(alpha: 0.5),
-      ),
-      label: Text(label),
-    );
-  }
-
-  Color _getStatusColor(TaskStatus status, ColorScheme scheme) {
-    switch (status) {
-      case TaskStatus.today:
-        return scheme.primary;
-      case TaskStatus.backlog:
-        return scheme.tertiary;
-      case TaskStatus.done:
-        return scheme.secondary;
-    }
-  }
-
-  IconData _getStatusIcon(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.today:
-        return Icons.today_rounded;
-      case TaskStatus.backlog:
-        return Icons.inventory_2_rounded;
-      case TaskStatus.done:
-        return Icons.check_circle_outline_rounded;
-    }
   }
 }

@@ -90,8 +90,17 @@ void main() {
     await tester.tap(todoInput);
     await tester.pump();
 
-    expect(find.text('Today'), findsOneWidget);
-    expect(find.text('Tomorrow'), findsOneWidget);
-    expect(find.text('This Week'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('todo-due-today')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('todo-due-tomorrow')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('todo-due-this-week')),
+      findsOneWidget,
+    );
   });
 }

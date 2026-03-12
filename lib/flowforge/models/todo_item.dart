@@ -1,6 +1,7 @@
 import 'task_energy_requirement.dart';
 import 'task_status.dart';
 import 'recurrence_rule.dart';
+import '../utils/date_helpers.dart';
 
 class TodoItem {
   const TodoItem({
@@ -48,7 +49,7 @@ class TodoItem {
   /// Is this task overdue?
   bool get isOverdue {
     if (deadline == null || isDone) return false;
-    return DateTime.now().isAfter(deadline!);
+    return isOverdueDate(deadline);
   }
 
   /// Get time estimation accuracy (1.0 = perfect, <1 = faster, >1 = slower)

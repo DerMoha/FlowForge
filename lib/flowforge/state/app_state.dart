@@ -10,6 +10,7 @@ import '../models/session_log.dart';
 import '../models/task_energy_requirement.dart';
 import '../models/task_status.dart';
 import '../models/todo_item.dart';
+import '../services/calendar_service.dart';
 import '../utils/date_helpers.dart';
 import 'persistence.dart';
 
@@ -637,6 +638,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
+    final normalizedDeadline = normalizeDueDate(newTodoDeadline);
     final item = TodoItem(
       id: '${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(9999)}',
       title: text,
@@ -645,7 +647,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       energyRequirement: newTodoEnergyRequirement,
       estimateMinutes: newTodoEstimateMinutes,
       status: TaskStatus.backlog,
-      deadline: newTodoDeadline,
+      deadline: normalizedDeadline,
     );
 
     final updatedTodos = <TodoItem>[...todos, item];
@@ -662,10 +664,14 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     todoInputFocusNode.unfocus();
     queueSave();
+
+    if (item.deadline != null) {
+      CalendarService.instance.syncTaskToCalendar(item);
+    }
   }
 
   void setNewTodoDeadline(DateTime? deadline) {
-    newTodoDeadline = deadline;
+    newTodoDeadline = normalizeDueDate(deadline);
     notifyListeners();
   }
 
@@ -749,6 +755,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     DateTime? deadline,
     String? projectId,
   }) {
+    final normalizedDeadline = normalizeDueDate(deadline);
     final item = TodoItem(
       id: '${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(9999)}',
       title: title,
@@ -757,7 +764,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       energyRequirement: energyRequirement,
       estimateMinutes: estimateMinutes,
       status: TaskStatus.backlog,
-      deadline: deadline,
+      deadline: normalizedDeadline,
       projectId: projectId,
     );
 
@@ -768,6 +775,10 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     );
     notifyListeners();
     queueSave();
+
+    if (item.deadline != null) {
+      CalendarService.instance.syncTaskToCalendar(item);
+    }
   }
 
   void updateTodo({
@@ -777,24 +788,37 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
     required int estimateMinutes,
     required TaskStatus status,
     DateTime? deadline,
+    String? projectId,
+    bool clearDeadline = false,
+    bool clearProjectId = false,
   }) {
     final index = todos.indexWhere((todo) => todo.id == id);
     if (index < 0) return;
 
+    final normalizedDeadline = clearDeadline
+        ? null
+        : normalizeDueDate(deadline);
     final existing = todos[index];
     final updated = existing.copyWith(
       title: title,
       energyRequirement: energyRequirement,
       estimateMinutes: estimateMinutes,
       status: status,
-      deadline: deadline,
+      deadline: normalizedDeadline,
       isDone: status == TaskStatus.done,
+      clearDeadline: clearDeadline,
+      projectId: projectId,
+      clearProjectId: clearProjectId,
     );
 
     todos = List<TodoItem>.from(todos)..[index] = updated;
     focusedTodoId = pickFocusedTodoId(todos, preferredId: focusedTodoId);
     notifyListeners();
     queueSave();
+
+    if (updated.deadline != null && updated.deadline != existing.deadline) {
+      CalendarService.instance.syncTaskToCalendar(updated);
+    }
   }
 
   void moveTaskToStatus(String taskId, TaskStatus newStatus) {

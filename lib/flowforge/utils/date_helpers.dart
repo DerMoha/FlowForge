@@ -1,5 +1,25 @@
 enum DueGroup { overdue, today, thisWeek, later }
 
+DateTime startOfDay(DateTime dateTime) {
+  return DateTime(dateTime.year, dateTime.month, dateTime.day);
+}
+
+DateTime endOfDay(DateTime dateTime) {
+  return DateTime(dateTime.year, dateTime.month, dateTime.day, 23, 59, 59, 999);
+}
+
+DateTime? normalizeDueDate(DateTime? dateTime) {
+  if (dateTime == null) return null;
+  return endOfDay(dateTime);
+}
+
+bool isOverdueDate(DateTime? deadline, {DateTime? now}) {
+  if (deadline == null) return false;
+  final currentDay = startOfDay(now ?? DateTime.now());
+  final deadlineDay = startOfDay(deadline);
+  return deadlineDay.isBefore(currentDay);
+}
+
 bool isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
 }
@@ -7,9 +27,8 @@ bool isSameDay(DateTime a, DateTime b) {
 DueGroup groupByDueDate(DateTime? deadline) {
   if (deadline == null) return DueGroup.later;
 
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
+  final today = startOfDay(DateTime.now());
+  final deadlineDay = startOfDay(deadline);
 
   if (deadlineDay.isBefore(today)) return DueGroup.overdue;
   if (isSameDay(deadlineDay, today)) return DueGroup.today;
@@ -26,21 +45,15 @@ String formatDueDate(DateTime? deadline) {
   final group = groupByDueDate(deadline);
   switch (group) {
     case DueGroup.overdue:
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
+      final today = startOfDay(DateTime.now());
+      final deadlineDay = startOfDay(deadline);
       final daysOverdue = today.difference(deadlineDay).inDays;
       if (daysOverdue == 1) return 'Overdue 1 day';
       return 'Overdue $daysOverdue days';
     case DueGroup.today:
       return 'Today';
     case DueGroup.thisWeek:
-      final now = DateTime.now();
-      final tomorrow = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).add(const Duration(days: 1));
+      final tomorrow = startOfDay(DateTime.now()).add(const Duration(days: 1));
       if (isSameDay(deadline, tomorrow)) return 'Tomorrow';
       return formatShortMonthDay(deadline);
     case DueGroup.later:

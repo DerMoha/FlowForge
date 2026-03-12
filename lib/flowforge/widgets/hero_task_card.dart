@@ -1,77 +1,48 @@
 import 'package:flutter/material.dart';
 
 import '../models/task_energy_requirement.dart';
+import '../models/task_status.dart';
 import '../models/todo_item.dart';
 import '../state/app_state.dart';
 import '../utils/date_helpers.dart';
 
-class HeroTaskCard extends StatefulWidget {
+class HeroTaskCard extends StatelessWidget {
   const HeroTaskCard({super.key, required this.state});
 
   final FlowForgeState state;
 
   @override
-  State<HeroTaskCard> createState() => _HeroTaskCardState();
-}
-
-class _HeroTaskCardState extends State<HeroTaskCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _breathController;
-
-  @override
-  void initState() {
-    super.initState();
-    _breathController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _breathController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final todo = widget.state.focusedTodo;
+    final todo = state.focusedTodo;
 
     if (todo == null) {
       return _emptyState(context);
     }
 
-    return AnimatedBuilder(
-      animation: _breathController,
-      builder: (context, child) {
-        final t = _breathController.value;
-        final scale = 1.0 + (t * 0.008);
-        final shadowOpacity = 0.08 + (t * 0.06);
-
-        return _buildDismissible(
-          todo: todo,
-          child: Transform.scale(
-            scale: scale,
-            child: _cardContent(context, todo, shadowOpacity),
-          ),
-        );
-      },
+    return _buildDismissible(
+      context: context,
+      todo: todo,
+      child: _cardContent(context, todo),
     );
   }
 
-  Widget _buildDismissible({required TodoItem todo, required Widget child}) {
+  Widget _buildDismissible({
+    required BuildContext context,
+    required TodoItem todo,
+    required Widget child,
+  }) {
     final scheme = Theme.of(context).colorScheme;
 
     return Dismissible(
       key: ValueKey<String>('hero-${todo.id}'),
       direction: DismissDirection.startToEnd,
-      onDismissed: (_) => widget.state.toggleTodo(todo.id, true),
+      onDismissed: (_) => state.toggleTodo(todo.id, true),
       background: Container(
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 24),
         decoration: BoxDecoration(
           color: scheme.primary.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -92,41 +63,38 @@ class _HeroTaskCardState extends State<HeroTaskCard>
     );
   }
 
-  Widget _cardContent(
-    BuildContext context,
-    TodoItem todo,
-    double shadowOpacity,
-  ) {
+  Widget _cardContent(BuildContext context, TodoItem todo) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hint = widget.state.todoConstraintHint(todo);
-    final energyFit = widget.state.isEnergyFit(todo);
-    final timeFit = widget.state.isTimeFit(todo);
-    final fitColor = energyFit && timeFit ? scheme.primary : scheme.tertiary;
-    final isOverdue = todo.isOverdue;
+    final hint = state.todoConstraintHint(todo);
+    final energyFit = state.isEnergyFit(todo);
+    final timeFit = state.isTimeFit(todo);
     final dueDateText = formatDueDate(todo.deadline);
-
-    final borderColor = isOverdue
-        ? scheme.error.withValues(alpha: 0.5)
-        : scheme.primary.withValues(alpha: 0.4);
+    final isOverdue = todo.isOverdue;
+    final fitColor = energyFit && timeFit ? scheme.primary : scheme.tertiary;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow.withValues(
-          alpha: isDark ? 0.75 : 0.9,
+          alpha: isDark ? 0.82 : 0.92,
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isOverdue
+              ? scheme.error.withValues(alpha: 0.45)
+              : scheme.primary.withValues(alpha: 0.28),
+          width: 1.5,
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: isOverdue
-                ? scheme.error.withValues(alpha: shadowOpacity * 0.7)
-                : scheme.primary.withValues(alpha: shadowOpacity),
-            blurRadius: 16,
-            spreadRadius: 1,
+            color: (isOverdue ? scheme.error : scheme.shadow).withValues(
+              alpha: isDark ? 0.2 : 0.12,
+            ),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -134,18 +102,28 @@ class _HeroTaskCardState extends State<HeroTaskCard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Text(
-                'Next Action',
-                style: textTheme.labelMedium?.copyWith(
-                  color: isOverdue ? scheme.error : scheme.primary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Best Fit Right Now',
+                  style: textTheme.labelMedium?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
+              const Spacer(),
               if (dueDateText.isNotEmpty)
                 _tag(
+                  context,
                   icon: isOverdue
                       ? Icons.warning_amber_rounded
                       : Icons.schedule,
@@ -154,30 +132,118 @@ class _HeroTaskCardState extends State<HeroTaskCard>
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             todo.title,
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            style: textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          Text(
+            'This is the cleanest next move for your current energy and focus window.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
-            runSpacing: 6,
+            runSpacing: 8,
             children: <Widget>[
               _tag(
+                context,
                 icon: todo.energyRequirement.icon,
                 text: '${todo.energyRequirement.label} energy',
                 color: todo.energyRequirement.accent,
               ),
               _tag(
+                context,
                 icon: Icons.timer_outlined,
                 text: '${todo.estimateMinutes} min',
                 color: scheme.secondary,
               ),
+              _tag(
+                context,
+                icon: todo.status == TaskStatus.today
+                    ? Icons.today_rounded
+                    : Icons.inventory_2_rounded,
+                text: todo.status.label,
+                color: todo.status == TaskStatus.today
+                    ? scheme.primary
+                    : scheme.tertiary,
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(hint, style: textTheme.labelSmall?.copyWith(color: fitColor)),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: fitColor.withValues(alpha: isDark ? 0.18 : 0.1),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  energyFit && timeFit
+                      ? Icons.check_circle
+                      : Icons.insights_rounded,
+                  size: 18,
+                  color: fitColor,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    hint,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: fitColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: <Widget>[
+              FilledButton.icon(
+                onPressed: state.toggleTimer,
+                icon: Icon(
+                  state.isRunning
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                ),
+                label: Text(state.isRunning ? 'Pause Focus' : 'Start Focus'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => state.toggleTodo(todo.id, true),
+                icon: const Icon(Icons.check_circle_outline_rounded),
+                label: const Text('Mark Done'),
+              ),
+              TextButton.icon(
+                onPressed: () => state.moveTaskToStatus(
+                  todo.id,
+                  todo.status == TaskStatus.today
+                      ? TaskStatus.backlog
+                      : TaskStatus.today,
+                ),
+                icon: Icon(
+                  todo.status == TaskStatus.today
+                      ? Icons.inventory_2_rounded
+                      : Icons.today_rounded,
+                ),
+                label: Text(
+                  todo.status == TaskStatus.today
+                      ? 'Back to Backlog'
+                      : 'Move to Today',
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -190,32 +256,27 @@ class _HeroTaskCardState extends State<HeroTaskCard>
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow.withValues(
-          alpha: isDark ? 0.7 : 0.85,
+          alpha: isDark ? 0.76 : 0.9,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(
-            Icons.add_task_rounded,
-            size: 36,
-            color: scheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: 8),
+          Icon(Icons.bolt_rounded, size: 32, color: scheme.primary),
+          const SizedBox(height: 10),
           Text(
-            'No tasks yet',
-            style: textTheme.titleMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            'Nothing is queued for focus yet',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
-            'Add one above to get your hero card.',
-            style: textTheme.bodySmall?.copyWith(
+            'Capture a task above or move one into Today so FlowForge can recommend the next best move.',
+            style: textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
           ),
@@ -224,33 +285,31 @@ class _HeroTaskCardState extends State<HeroTaskCard>
     );
   }
 
-  Widget _tag({
+  Widget _tag(
+    BuildContext context, {
     required IconData icon,
     required String text,
     required Color color,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark
-        ? Color.alphaBlend(Colors.white.withValues(alpha: 0.2), color)
-        : color;
     final textTheme = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.26 : 0.14),
-        borderRadius: BorderRadius.circular(12),
+        color: color.withValues(alpha: isDark ? 0.24 : 0.12),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 13, color: textColor),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
           Text(
             text,
             style: textTheme.labelSmall?.copyWith(
-              color: textColor,
-              fontWeight: FontWeight.w600,
+              color: color,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

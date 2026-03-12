@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../models/task_energy_requirement.dart';
 import '../models/task_status.dart';
 import '../state/app_state.dart';
-import '../state/project_state.dart';
-import '../utils/date_helpers.dart';
 import 'kanban_column.dart';
+import 'task_detail_sections.dart';
 
 class TaskKanbanScreen extends StatefulWidget {
   const TaskKanbanScreen({super.key, required this.state});
@@ -23,7 +21,6 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
   int _estimateMinutes = 25;
   DateTime? _deadline;
   String? _projectId;
-  bool _showDetails = false;
 
   @override
   void initState() {
@@ -57,7 +54,6 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
     _taskController.clear();
     _deadline = null;
     _projectId = null;
-    setState(() => _showDetails = false);
     Navigator.pop(context);
   }
 
@@ -67,7 +63,6 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
     _estimateMinutes = 25;
     _deadline = null;
     _projectId = null;
-    _showDetails = false;
 
     showModalBottomSheet(
       context: context,
@@ -96,6 +91,13 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _buildHeader(context, scheme, textTheme),
+              const SizedBox(height: 8),
+              Text(
+                'Choose what deserves today and keep the rest organized.',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(height: 16),
               KanbanColumn(
                 status: TaskStatus.today,
@@ -134,252 +136,78 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
         color: isDark ? scheme.surfaceContainerHigh : scheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: scheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: scheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  controller: _taskController,
-                  autofocus: true,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _addTask(),
-                  decoration: const InputDecoration(
-                    hintText: 'Task title...',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
+            Text(
+              'Add a task',
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 8),
-              FilledButton(
-                onPressed: _addTask,
-                style: FilledButton.styleFrom(minimumSize: const Size(48, 56)),
-                child: const Icon(Icons.add),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Create it once, then decide later if it belongs in Today.',
+              style: textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () => setState(() => _showDetails = !_showDetails),
-            child: Row(
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Icon(
-                  _showDetails
-                      ? Icons.expand_less_rounded
-                      : Icons.expand_more_rounded,
-                  size: 20,
-                  color: scheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Details',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                if (_deadline != null) ...<Widget>[
-                  const SizedBox(width: 8),
-                  Icon(Icons.schedule, size: 14, color: scheme.tertiary),
-                  const SizedBox(width: 2),
-                  Text(
-                    formatDueDate(_deadline),
-                    style: textTheme.bodySmall?.copyWith(
-                      color: scheme.tertiary,
+                Expanded(
+                  child: TextField(
+                    controller: _taskController,
+                    autofocus: true,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _addTask(),
+                    decoration: const InputDecoration(
+                      hintText: 'Task title...',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                ],
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: _addTask,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(56, 56),
+                  ),
+                  child: const Icon(Icons.add),
+                ),
               ],
             ),
-          ),
-          if (_showDetails) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(
-              'Energy Level',
-              style: textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: TaskEnergyRequirement.values.map((req) {
-                return ChoiceChip(
-                  selected: _energyRequirement == req,
-                  onSelected: (_) => setState(() => _energyRequirement = req),
-                  selectedColor: req.accent.withValues(alpha: 0.18),
-                  side: BorderSide(color: req.accent.withValues(alpha: 0.35)),
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Icon(req.icon, size: 14, color: req.accent),
-                      const SizedBox(width: 4),
-                      Text(req.label),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Time Estimate',
-              style: textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: FlowForgeState.todoEstimatePresets.map((min) {
-                return ChoiceChip(
-                  selected: _estimateMinutes == min,
-                  onSelected: (_) => setState(() => _estimateMinutes = min),
-                  label: Text('$min min'),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Due Date',
-              style: textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                _buildDueChip('Today', DateTime.now()),
-                _buildDueChip(
-                  'Tomorrow',
-                  DateTime.now().add(const Duration(days: 1)),
-                ),
-                _buildDueChip(
-                  'This Week',
-                  DateTime.now().add(const Duration(days: 7)),
-                ),
-                ActionChip(
-                  avatar: Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                  label: const Text('Custom'),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _deadline ?? DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) setState(() => _deadline = picked);
-                  },
-                ),
-                if (_deadline != null)
-                  ActionChip(
-                    avatar: Icon(
-                      Icons.close,
-                      size: 16,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    label: const Text('Clear'),
-                    onPressed: () => setState(() => _deadline = null),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Consumer<ProjectState>(
-              builder: (context, projectState, child) {
-                final projects = projectState.projects;
-                if (projects.isEmpty) return const SizedBox.shrink();
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Project',
-                      style: textTheme.labelMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: <Widget>[
-                        ChoiceChip(
-                          selected: _projectId == null,
-                          onSelected: (_) => setState(() => _projectId = null),
-                          label: const Text('None'),
-                        ),
-                        ...projects.map((project) {
-                          return ChoiceChip(
-                            selected: _projectId == project.id,
-                            onSelected: (_) =>
-                                setState(() => _projectId = project.id),
-                            selectedColor: project.color.withValues(
-                              alpha: 0.18,
-                            ),
-                            side: BorderSide(
-                              color: project.color.withValues(alpha: 0.35),
-                            ),
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: project.color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(project.name),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ],
-                );
-              },
+            const SizedBox(height: 16),
+            TaskDetailSections(
+              keyPrefix: 'kanban-add',
+              energyRequirement: _energyRequirement,
+              onEnergyChanged: (value) =>
+                  setState(() => _energyRequirement = value),
+              estimateMinutes: _estimateMinutes,
+              onEstimateChanged: (value) =>
+                  setState(() => _estimateMinutes = value),
+              deadline: _deadline,
+              onDeadlineChanged: (value) => setState(() => _deadline = value),
+              projectId: _projectId,
+              onProjectChanged: (value) => setState(() => _projectId = value),
             ),
           ],
-        ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildDueChip(String label, DateTime date) {
-    final scheme = Theme.of(context).colorScheme;
-    final isSelected = _deadline != null && isSameDay(_deadline!, date);
-
-    return ChoiceChip(
-      selected: isSelected,
-      onSelected: (_) => setState(() => _deadline = date),
-      selectedColor: scheme.primaryContainer,
-      side: BorderSide(
-        color: isSelected
-            ? scheme.primary.withValues(alpha: 0.5)
-            : scheme.outline.withValues(alpha: 0.5),
-      ),
-      label: Text(label),
     );
   }
 

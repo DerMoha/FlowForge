@@ -2,15 +2,57 @@ import 'package:flutter/material.dart';
 
 import '../models/task_energy_requirement.dart';
 import '../state/app_state.dart';
-import '../utils/date_helpers.dart';
+import '../services/voice_service.dart';
+import 'task_detail_sections.dart';
 
-class TaskInputBar extends StatelessWidget {
+class TaskInputBar extends StatefulWidget {
   const TaskInputBar({super.key, required this.state});
 
   final FlowForgeState state;
 
   @override
+  State<TaskInputBar> createState() => _TaskInputBarState();
+}
+
+class _TaskInputBarState extends State<TaskInputBar> {
+  bool _isListening = false;
+  String _preVoiceText = '';
+
+  @override
+  void dispose() {
+    if (_isListening) {
+      VoiceService.instance.stopListening((_) {});
+    }
+    super.dispose();
+  }
+
+  void _toggleVoiceInput() async {
+    if (_isListening) {
+      await VoiceService.instance.stopListening((isListening) {
+        if (mounted) setState(() => _isListening = isListening);
+      });
+    } else {
+      _preVoiceText = widget.state.todoInputController.text;
+      await VoiceService.instance.startListening(
+        onResult: (text) {
+          if (mounted) {
+            final newText = _preVoiceText.isEmpty
+                ? text
+                : '$_preVoiceText $text';
+            widget.state.todoInputController.text = newText;
+            widget.state.expandTodoComposer();
+          }
+        },
+        onListeningStateChanged: (isListening) {
+          if (mounted) setState(() => _isListening = isListening);
+        },
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -31,7 +73,46 @@ class TaskInputBar extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(Icons.bolt_rounded, size: 16, color: scheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                'Quick capture',
+                style: textTheme.labelLarge?.copyWith(
+                  color: scheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: _isListening
+                    ? Container(
+                        key: const ValueKey<String>('voice-status-listening'),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.errorContainer,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          'Listening',
+                          style: textTheme.labelMedium?.copyWith(
+                            color: scheme.onErrorContainer,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Row(
             children: <Widget>[
               Expanded(
@@ -42,14 +123,42 @@ class TaskInputBar extends StatelessWidget {
                   textInputAction: TextInputAction.done,
                   onTap: state.expandTodoComposer,
                   onChanged: (_) => state.expandTodoComposer(),
-                  onSubmitted: (_) => state.addTodo(),
-                  decoration: const InputDecoration(hintText: 'Add a task...'),
+                  onSubmitted: (_) {
+                    if (_isListening) _toggleVoiceInput();
+                    state.addTodo();
+                  },
+                  decoration: InputDecoration(
+                    hintText: _isListening ? 'Listening...' : 'Add a task...',
+                    hintStyle: _isListening
+                        ? TextStyle(color: scheme.error)
+                        : null,
+                    border: InputBorder.none,
+                    filled: false,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    suffixIcon: IconButton(
+                      key: const ValueKey<String>('todo-voice-button'),
+                      icon: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: _isListening ? scheme.error : scheme.primary,
+                      ),
+                      onPressed: _toggleVoiceInput,
+                      tooltip: _isListening
+                          ? 'Stop Listening'
+                          : 'Voice Dictation',
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               FilledButton(
                 key: const ValueKey<String>('todo-add-button'),
-                onPressed: state.addTodo,
+                onPressed: () {
+                  if (_isListening) _toggleVoiceInput();
+                  state.addTodo();
+                },
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(48, 48),
                   padding: EdgeInsets.zero,
@@ -66,43 +175,18 @@ class TaskInputBar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       const SizedBox(height: 10),
-                      _buildEnergyChips(context),
-                      const SizedBox(height: 8),
-                      _buildDueDateChips(context),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              'Suggested: $suggestedMinutes min for ${state.newTodoEnergyRequirement.label.toLowerCase()} energy.',
-                              style: textTheme.bodySmall?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            key: const ValueKey<String>('todo-use-estimate'),
-                            onPressed: state.useSuggestedTodoEstimate,
-                            child: Text('Use $suggestedMinutes min'),
-                          ),
-                        ],
-                      ),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: FlowForgeState.todoEstimatePresets
-                            .map(
-                              (minutes) => ChoiceChip(
-                                key: ValueKey<String>('todo-effort-$minutes'),
-                                selected:
-                                    state.newTodoEstimateMinutes == minutes,
-                                onSelected: (_) =>
-                                    state.setNewTodoEstimateMinutes(minutes),
-                                selectedColor: scheme.secondaryContainer,
-                                label: Text('$minutes min'),
-                              ),
-                            )
-                            .toList(),
+                      TaskDetailSections(
+                        keyPrefix: 'todo',
+                        energyRequirement: state.newTodoEnergyRequirement,
+                        onEnergyChanged: state.setNewTodoEnergyRequirement,
+                        estimateMinutes: state.newTodoEstimateMinutes,
+                        onEstimateChanged: state.setNewTodoEstimateMinutes,
+                        deadline: state.newTodoDeadline,
+                        onDeadlineChanged: state.setNewTodoDeadline,
+                        suggestedMinutes: suggestedMinutes,
+                        onUseSuggestedEstimate: state.useSuggestedTodoEstimate,
+                        estimateHelperText:
+                            'Suggested: $suggestedMinutes min for ${state.newTodoEnergyRequirement.label.toLowerCase()} energy.',
                       ),
                     ],
                   )
@@ -111,173 +195,5 @@ class TaskInputBar extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Widget _buildEnergyChips(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: TaskEnergyRequirement.values
-          .map(
-            (requirement) => ChoiceChip(
-              key: ValueKey<String>('todo-energy-${requirement.name}'),
-              selected: state.newTodoEnergyRequirement == requirement,
-              onSelected: (_) => state.setNewTodoEnergyRequirement(requirement),
-              selectedColor: requirement.accent.withValues(alpha: 0.18),
-              side: BorderSide(
-                color: requirement.accent.withValues(alpha: 0.35),
-              ),
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(requirement.icon, size: 15, color: requirement.accent),
-                  const SizedBox(width: 4),
-                  Text(requirement.label),
-                ],
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _buildDueDateChips(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final thisWeek = today.add(const Duration(days: 7));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: <Widget>[
-            _dueDateChip(
-              context: context,
-              label: 'Today',
-              deadline: today,
-              isSelected:
-                  state.newTodoDeadline != null &&
-                  isSameDay(state.newTodoDeadline!, today),
-            ),
-            _dueDateChip(
-              context: context,
-              label: 'Tomorrow',
-              deadline: tomorrow,
-              isSelected:
-                  state.newTodoDeadline != null &&
-                  isSameDay(state.newTodoDeadline!, tomorrow),
-            ),
-            _dueDateChip(
-              context: context,
-              label: 'This Week',
-              deadline: thisWeek,
-              isSelected:
-                  state.newTodoDeadline != null &&
-                  isSameDay(state.newTodoDeadline!, thisWeek),
-            ),
-            ActionChip(
-              avatar: Icon(
-                Icons.calendar_today,
-                size: 16,
-                color:
-                    state.newTodoDeadline != null &&
-                        !_isQuickChip(
-                          state.newTodoDeadline,
-                          today,
-                          tomorrow,
-                          thisWeek,
-                        )
-                    ? scheme.primary
-                    : scheme.onSurfaceVariant,
-              ),
-              label: Text(
-                state.newTodoDeadline != null &&
-                        !_isQuickChip(
-                          state.newTodoDeadline,
-                          today,
-                          tomorrow,
-                          thisWeek,
-                        )
-                    ? formatDueDate(state.newTodoDeadline)
-                    : 'Custom',
-              ),
-              side: BorderSide(
-                color:
-                    state.newTodoDeadline != null &&
-                        !_isQuickChip(
-                          state.newTodoDeadline,
-                          today,
-                          tomorrow,
-                          thisWeek,
-                        )
-                    ? scheme.primary.withValues(alpha: 0.5)
-                    : scheme.outline.withValues(alpha: 0.5),
-              ),
-              onPressed: () => _showDatePicker(context, today),
-            ),
-            if (state.newTodoDeadline != null)
-              ActionChip(
-                avatar: Icon(
-                  Icons.close,
-                  size: 16,
-                  color: scheme.onSurfaceVariant,
-                ),
-                label: const Text('Clear'),
-                onPressed: state.clearNewTodoDeadline,
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  bool _isQuickChip(
-    DateTime? deadline,
-    DateTime today,
-    DateTime tomorrow,
-    DateTime thisWeek,
-  ) {
-    if (deadline == null) return false;
-    return isSameDay(deadline, today) ||
-        isSameDay(deadline, tomorrow) ||
-        isSameDay(deadline, thisWeek);
-  }
-
-  Widget _dueDateChip({
-    required BuildContext context,
-    required String label,
-    required DateTime deadline,
-    required bool isSelected,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) => state.setNewTodoDeadline(deadline),
-      selectedColor: scheme.primaryContainer,
-      side: BorderSide(
-        color: isSelected
-            ? scheme.primary.withValues(alpha: 0.5)
-            : scheme.outline.withValues(alpha: 0.5),
-      ),
-    );
-  }
-
-  Future<void> _showDatePicker(BuildContext context, DateTime today) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: state.newTodoDeadline ?? today,
-      firstDate: today,
-      lastDate: today.add(const Duration(days: 365)),
-    );
-
-    if (picked != null) {
-      state.setNewTodoDeadline(picked);
-    }
   }
 }
