@@ -5,26 +5,87 @@ import 'package:google_fonts/google_fonts.dart';
 class FlowForgeTypography {
   FlowForgeTypography._();
 
-  /// Primary font: Inter - clean, modern, highly legible
   static TextTheme primaryTextTheme(Brightness brightness) {
     final baseTheme = brightness == Brightness.dark
         ? ThemeData.dark().textTheme
         : ThemeData.light().textTheme;
+    final bodyTheme = GoogleFonts.plusJakartaSansTextTheme(baseTheme);
 
-    return GoogleFonts.interTextTheme(baseTheme);
+    return bodyTheme.copyWith(
+      displayLarge: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.displayLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -2.4,
+        ),
+      ),
+      displayMedium: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.displayMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -1.8,
+        ),
+      ),
+      displaySmall: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.displaySmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -1.4,
+        ),
+      ),
+      headlineLarge: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.headlineLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -1.4,
+        ),
+      ),
+      headlineMedium: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -1.1,
+        ),
+      ),
+      headlineSmall: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+        ),
+      ),
+      titleLarge: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      titleMedium: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      titleSmall: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      labelLarge: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
+      ),
+      labelMedium: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.labelMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
+      ),
+      labelSmall: GoogleFonts.spaceGrotesk(
+        textStyle: bodyTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
   }
 
-  /// Accent font: Manrope - friendly, geometric, for emphasis
   static TextStyle accentStyle(TextStyle base) {
-    return GoogleFonts.manrope(textStyle: base);
+    return GoogleFonts.spaceGrotesk(textStyle: base);
   }
 
-  /// Monospace font: JetBrains Mono - for timer display
   static TextStyle monoStyle(TextStyle base) {
     return GoogleFonts.jetBrainsMono(textStyle: base);
   }
 
-  /// Get display text style (for big numbers, timers)
   static TextStyle displayNumber(BuildContext context, {Color? color}) {
     final theme = Theme.of(context);
     return GoogleFonts.jetBrainsMono(
@@ -36,10 +97,9 @@ class FlowForgeTypography {
     );
   }
 
-  /// Get heading style with accent font
   static TextStyle heading(BuildContext context, {Color? color}) {
     final theme = Theme.of(context);
-    return GoogleFonts.manrope(
+    return GoogleFonts.spaceGrotesk(
       textStyle: theme.textTheme.headlineMedium?.copyWith(
         fontWeight: FontWeight.bold,
         color: color,
@@ -47,17 +107,13 @@ class FlowForgeTypography {
     );
   }
 
-  /// Get body text with primary font
   static TextStyle body(BuildContext context, {Color? color}) {
     final theme = Theme.of(context);
-    return GoogleFonts.inter(
-      textStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: color,
-      ),
+    return GoogleFonts.plusJakartaSans(
+      textStyle: theme.textTheme.bodyLarge?.copyWith(color: color),
     );
   }
 
-  /// Timer display style (large monospace)
   static TextStyle timerDisplay(BuildContext context, {Color? color}) {
     final theme = Theme.of(context);
     return GoogleFonts.jetBrainsMono(
@@ -71,7 +127,6 @@ class FlowForgeTypography {
     );
   }
 
-  /// Compact timer display (for smaller spaces)
   static TextStyle timerDisplayCompact(BuildContext context, {Color? color}) {
     final theme = Theme.of(context);
     return GoogleFonts.jetBrainsMono(
@@ -83,10 +138,9 @@ class FlowForgeTypography {
     );
   }
 
-  /// Label style with accent font
   static TextStyle label(BuildContext context, {Color? color}) {
     final theme = Theme.of(context);
-    return GoogleFonts.manrope(
+    return GoogleFonts.spaceGrotesk(
       textStyle: theme.textTheme.labelLarge?.copyWith(
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
@@ -95,10 +149,9 @@ class FlowForgeTypography {
     );
   }
 
-  /// Button text style
   static TextStyle button(BuildContext context, {Color? color}) {
     final theme = Theme.of(context);
-    return GoogleFonts.manrope(
+    return GoogleFonts.spaceGrotesk(
       textStyle: theme.textTheme.labelLarge?.copyWith(
         fontWeight: FontWeight.w700,
         letterSpacing: 0.8,

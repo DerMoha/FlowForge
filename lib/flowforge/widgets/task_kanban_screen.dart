@@ -242,13 +242,17 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
     final doneCount = widget.state.doneTodos.length;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.74),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
         children: <Widget>[
           _buildStatItem(
             context,
@@ -256,7 +260,6 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
             count: todayCount,
             color: scheme.primary,
           ),
-          const SizedBox(width: 12),
           _buildStatItem(
             context,
             icon: Icons.check_circle_rounded,
@@ -274,19 +277,37 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
     required int count,
     required Color color,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 4),
-        Text(
-          '$count',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: color,
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            '$count',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 6),
+          Container(width: 1, height: 14, color: color.withValues(alpha: 0.24)),
+          const SizedBox(width: 6),
+          Text(
+            icon == Icons.today_rounded ? 'Today' : 'Done',
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 }

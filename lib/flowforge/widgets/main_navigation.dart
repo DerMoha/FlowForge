@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state/app_state.dart';
 import '../utils/date_helpers.dart';
+import 'ambient_gradient_background.dart';
 import 'calm_scaffold.dart';
 import 'task_kanban_screen.dart';
 
@@ -25,6 +26,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
         children: <Widget>[
@@ -41,39 +43,47 @@ class _MainNavigationState extends State<MainNavigation> {
 
   Widget _buildBottomNav(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.3),
-            width: 0.5,
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHigh.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.45),
           ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: scheme.shadow.withValues(alpha: 0.12),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
         ),
-      ),
-      child: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
-        },
-        backgroundColor: isDark
-            ? scheme.surfaceContainerHighest.withValues(alpha: 0.8)
-            : scheme.surface.withValues(alpha: 0.9),
-        elevation: 0,
-        height: 64,
-        destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.center_focus_strong_outlined),
-            selectedIcon: Icon(Icons.center_focus_strong_rounded),
-            label: 'Focus',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.view_kanban_outlined),
-            selectedIcon: Icon(Icons.view_kanban_rounded),
-            label: 'Tasks',
-          ),
-        ],
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: (index) {
+            setState(() => _currentIndex = index);
+          },
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          height: 68,
+          destinations: const <NavigationDestination>[
+            NavigationDestination(
+              icon: Icon(Icons.center_focus_strong_outlined),
+              selectedIcon: Icon(Icons.center_focus_strong_rounded),
+              label: 'Focus',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.view_kanban_outlined),
+              selectedIcon: Icon(Icons.view_kanban_rounded),
+              label: 'Tasks',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -91,22 +101,8 @@ class _KanbanPage extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [
-                  scheme.surface,
-                  scheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                ]
-              : [
-                  scheme.primaryContainer.withValues(alpha: 0.1),
-                  scheme.surface,
-                ],
-        ),
-      ),
+    return AmbientGradientBackground(
+      energy: state.energy,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Column(
@@ -128,20 +124,45 @@ class _KanbanPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            formatCompactDate(DateTime.now()),
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'FlowForge',
+                  style: textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Task board for ${formatCompactDate(DateTime.now())}',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
-          IconButton.filledTonal(
-            tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
-            onPressed: onToggleTheme,
-            icon: Icon(
-              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHigh.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: scheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+            ),
+            child: IconButton.filledTonal(
+              tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+              onPressed: onToggleTheme,
+              icon: Icon(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              ),
             ),
           ),
         ],

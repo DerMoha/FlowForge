@@ -58,7 +58,7 @@ class TaskDetailSections extends StatelessWidget {
             children: TaskStatus.values.map((value) {
               final color = _statusColor(value, scheme);
               return ChoiceChip(
-                key: ValueKey<String>('${keyPrefix}-status-${value.name}'),
+                key: ValueKey<String>('$keyPrefix-status-${value.name}'),
                 selected: status == value,
                 onSelected: (_) => onStatusChanged!(value),
                 selectedColor: color.withValues(alpha: 0.18),
@@ -83,7 +83,7 @@ class TaskDetailSections extends StatelessWidget {
           runSpacing: 8,
           children: TaskEnergyRequirement.values.map((requirement) {
             return ChoiceChip(
-              key: ValueKey<String>('${keyPrefix}-energy-${requirement.name}'),
+              key: ValueKey<String>('$keyPrefix-energy-${requirement.name}'),
               selected: energyRequirement == requirement,
               onSelected: (_) => onEnergyChanged(requirement),
               selectedColor: requirement.accent.withValues(alpha: 0.18),
@@ -113,7 +113,7 @@ class TaskDetailSections extends StatelessWidget {
           runSpacing: 8,
           children: FlowForgeState.todoEstimatePresets.map((minutes) {
             return ChoiceChip(
-              key: ValueKey<String>('${keyPrefix}-effort-$minutes'),
+              key: ValueKey<String>('$keyPrefix-effort-$minutes'),
               selected: estimateMinutes == minutes,
               onSelected: (_) => onEstimateChanged(minutes),
               label: Text('$minutes min'),
@@ -135,7 +135,7 @@ class TaskDetailSections extends StatelessWidget {
                 ),
               ),
               TextButton(
-                key: ValueKey<String>('${keyPrefix}-use-estimate'),
+                key: ValueKey<String>('$keyPrefix-use-estimate'),
                 onPressed: onUseSuggestedEstimate,
                 child: Text('Use $suggestedMinutes min'),
               ),
@@ -173,7 +173,7 @@ class TaskDetailSections extends StatelessWidget {
                     runSpacing: 8,
                     children: <Widget>[
                       ChoiceChip(
-                        key: ValueKey<String>('${keyPrefix}-project-none'),
+                        key: ValueKey<String>('$keyPrefix-project-none'),
                         selected: projectId == null,
                         onSelected: (_) => onProjectChanged!(null),
                         label: const Text('None'),
@@ -181,7 +181,7 @@ class TaskDetailSections extends StatelessWidget {
                       ...projects.map((project) {
                         return ChoiceChip(
                           key: ValueKey<String>(
-                            '${keyPrefix}-project-${project.id}',
+                            '$keyPrefix-project-${project.id}',
                           ),
                           selected: projectId == project.id,
                           onSelected: (_) => onProjectChanged!(project.id),
@@ -304,7 +304,7 @@ class _DueDateChips extends StatelessWidget {
           onChanged: onChanged,
         ),
         ActionChip(
-          key: ValueKey<String>('${keyPrefix}-due-custom'),
+          key: ValueKey<String>('$keyPrefix-due-custom'),
           avatar: Icon(
             Icons.calendar_today,
             size: 16,
@@ -331,7 +331,7 @@ class _DueDateChips extends StatelessWidget {
         ),
         if (deadline != null)
           ActionChip(
-            key: ValueKey<String>('${keyPrefix}-due-clear'),
+            key: ValueKey<String>('$keyPrefix-due-clear'),
             avatar: Icon(Icons.close, size: 16, color: scheme.onSurfaceVariant),
             label: const Text('Clear'),
             onPressed: () => onChanged(null),
@@ -388,7 +388,7 @@ class _DueDateChip extends StatelessWidget {
 
     return ChoiceChip(
       key: ValueKey<String>(
-        '${keyPrefix}-due-${label.toLowerCase().replaceAll(' ', '-')}',
+        '$keyPrefix-due-${label.toLowerCase().replaceAll(' ', '-')}',
       ),
       label: Text(label),
       selected: isSelected,
