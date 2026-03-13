@@ -1,11 +1,10 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
-
-import '../models/user_profile.dart';
-import '../models/achievement.dart';
 
 /// Service for exporting and sharing progress cards
 class ExportService {
@@ -16,7 +15,8 @@ class ExportService {
   /// Generate a shareable image from a widget
   Future<Uint8List?> captureWidget(GlobalKey key) async {
     try {
-      final boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return null;
 
       final image = await boundary.toImage(pixelRatio: 3.0);
@@ -64,58 +64,21 @@ class ExportService {
     };
   }
 
-  /// Generate achievement unlock card data
-  Map<String, dynamic> generateAchievementCard(Achievement achievement) {
-    return {
-      'title': achievement.title,
-      'description': achievement.description,
-      'rarity': achievement.rarity.label,
-      'category': achievement.category.name,
-    };
-  }
-
-  /// Generate level up card data
-  Map<String, dynamic> generateLevelUpCard(UserProfile profile) {
-    return {
-      'level': profile.level,
-      'title': profile.title,
-      'xp': profile.totalXP,
-      'nextLevelXP': profile.nextLevelXP,
-      'progress': profile.levelProgress,
-    };
-  }
-
-  /// Generate streak milestone card data
-  Map<String, dynamic> generateStreakCard(int streak) {
-    String message;
-    if (streak >= 365) {
-      message = 'Legendary Streak!';
-    } else if (streak >= 100) {
-      message = 'Unstoppable!';
-    } else if (streak >= 30) {
-      message = 'Dedicated!';
-    } else if (streak >= 7) {
-      message = 'Committed!';
-    } else {
-      message = 'Keep It Up!';
-    }
-
-    return {
-      'streak': streak,
-      'message': message,
-      'title': '$streak Day Streak',
-    };
+  String formatWeeklySummaryText(Map<String, dynamic> summary) {
+    return 'My FlowForge Progress\n'
+        '${summary['sessions']} sessions completed\n'
+        '${summary['hours']} hours focused\n'
+        '${summary['tasks']} tasks finished\n'
+        '${summary['streak']}-day streak';
   }
 
   /// Export data as JSON string
   String exportDataAsJson(Map<String, dynamic> data) {
-    // In a real implementation, use json.encode
-    return data.toString();
+    return jsonEncode(data);
   }
 
   /// Generate QR code data for device transfer
   String generateTransferCode(Map<String, dynamic> data) {
-    // In a real implementation, encode data to base64
-    return 'transfer_code_placeholder';
+    return base64UrlEncode(utf8.encode(exportDataAsJson(data)));
   }
 }

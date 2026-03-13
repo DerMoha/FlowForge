@@ -58,16 +58,27 @@ class Project {
       id: json['id'] as String,
       name: json['name'] as String,
       color: Color(json['color'] as int? ?? 0xFF2196F3),
-      icon: IconData(
-        json['icon'] as int? ?? Icons.folder_rounded.codePoint,
-        fontFamily: 'MaterialIcons',
-      ),
+      icon: _getIconData(json['icon'] as int?),
       createdAt: DateTime.parse(json['created_at'] as String),
       deadline: json['deadline'] != null
           ? DateTime.tryParse(json['deadline'] as String)
           : null,
       description: json['description'] as String?,
     );
+  }
+
+  static IconData _getIconData(int? codePoint) {
+    if (codePoint == null) return ProjectIcons.folder;
+
+    // Find the matching predefined constant icon to preserve tree-shaking
+    for (final icon in ProjectIcons.all) {
+      if (icon.codePoint == codePoint) {
+        return icon;
+      }
+    }
+
+    // Fallback if not found in our constants
+    return ProjectIcons.folder;
   }
 }
 
