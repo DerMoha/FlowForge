@@ -5,6 +5,7 @@ import '../utils/date_helpers.dart';
 import 'ambient_gradient_background.dart';
 import 'calm_scaffold.dart';
 import 'task_kanban_screen.dart';
+import 'workspace_hub.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({
@@ -23,6 +24,10 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
+  void _openWorkspace(BuildContext context) {
+    openWorkspaceHub(context, widget.state);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,8 +38,13 @@ class _MainNavigationState extends State<MainNavigation> {
           CalmScaffold(
             state: widget.state,
             onToggleTheme: widget.onToggleTheme,
+            onOpenWorkspace: () => _openWorkspace(context),
           ),
-          _KanbanPage(state: widget.state, onToggleTheme: widget.onToggleTheme),
+          _KanbanPage(
+            state: widget.state,
+            onToggleTheme: widget.onToggleTheme,
+            onOpenWorkspace: () => _openWorkspace(context),
+          ),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(context),
@@ -90,10 +100,15 @@ class _MainNavigationState extends State<MainNavigation> {
 }
 
 class _KanbanPage extends StatelessWidget {
-  const _KanbanPage({required this.state, required this.onToggleTheme});
+  const _KanbanPage({
+    required this.state,
+    required this.onToggleTheme,
+    required this.onOpenWorkspace,
+  });
 
   final FlowForgeState state;
   final VoidCallback onToggleTheme;
+  final VoidCallback onOpenWorkspace;
 
   @override
   Widget build(BuildContext context) {
@@ -148,22 +163,35 @@ class _KanbanPage extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHigh.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              IconButton.filledTonal(
+                tooltip: 'Open workspace',
+                onPressed: onOpenWorkspace,
+                icon: const Icon(Icons.dashboard_customize_rounded),
               ),
-            ),
-            child: IconButton.filledTonal(
-              tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
-              onPressed: onToggleTheme,
-              icon: Icon(
-                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHigh.withValues(alpha: 0.72),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: scheme.outlineVariant.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: IconButton.filledTonal(
+                  tooltip: isDark
+                      ? 'Switch to light mode'
+                      : 'Switch to dark mode',
+                  onPressed: onToggleTheme,
+                  icon: Icon(
+                    isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),

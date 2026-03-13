@@ -18,10 +18,12 @@ class CalmScaffold extends StatefulWidget {
     super.key,
     required this.state,
     required this.onToggleTheme,
+    required this.onOpenWorkspace,
   });
 
   final FlowForgeState state;
   final VoidCallback onToggleTheme;
+  final VoidCallback onOpenWorkspace;
 
   @override
   State<CalmScaffold> createState() => _CalmScaffoldState();
@@ -249,14 +251,27 @@ class _CalmScaffoldState extends State<CalmScaffold> {
                 ),
               ),
               const SizedBox(height: 8),
-              IconButton.filledTonal(
-                tooltip: isDark
-                    ? 'Switch to light mode'
-                    : 'Switch to dark mode',
-                onPressed: widget.onToggleTheme,
-                icon: Icon(
-                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  IconButton.filledTonal(
+                    tooltip: 'Open workspace',
+                    onPressed: widget.onOpenWorkspace,
+                    icon: const Icon(Icons.dashboard_customize_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    tooltip: isDark
+                        ? 'Switch to light mode'
+                        : 'Switch to dark mode',
+                    onPressed: widget.onToggleTheme,
+                    icon: Icon(
+                      isDark
+                          ? Icons.light_mode_rounded
+                          : Icons.dark_mode_rounded,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -327,6 +342,12 @@ class _CalmScaffoldState extends State<CalmScaffold> {
                 color: scheme.secondary,
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          FilledButton.tonalIcon(
+            onPressed: widget.onOpenWorkspace,
+            icon: const Icon(Icons.space_dashboard_rounded),
+            label: const Text('Open workspace'),
           ),
         ],
       ),
