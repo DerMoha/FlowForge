@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/energy_preset.dart';
+import '../models/todo_item.dart';
 import '../state/app_state.dart';
+import '../state/project_state.dart';
 import '../utils/date_helpers.dart';
 import 'activity_heatmap.dart';
 import 'ambient_gradient_background.dart';
@@ -77,107 +80,150 @@ class _CalmScaffoldState extends State<CalmScaffold> {
   @override
   Widget build(BuildContext context) {
     final isFocusMode = _state.isRunning;
+    final projectState = context.watch<ProjectState>();
+    final activeProject = projectState.activeProject;
+    final filteredOpenTodos = _filterTodos(
+      _state.sortedOpenTodos,
+      projectId: activeProject?.id,
+    );
+    final filteredCompletedTodos = _filterTodos(
+      _state.completedTodos,
+      projectId: activeProject?.id,
+    );
+    final filteredTodayTodos = _filterTodos(
+      _state.todayTodos,
+      projectId: activeProject?.id,
+    );
+    final visibleHeroTodo = _pickHeroTodo(filteredOpenTodos, activeProject?.id);
 
     return AmbientGradientBackground(
       energy: _state.energy,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: Stack(
-            children: <Widget>[
-              Column(
-                children: <Widget>[
-                  _focusHeader(context),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                    child: _dailySnapshot(context),
-                  ),
-                  FocusModeTransition(
-                    isFocusMode: isFocusMode,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                      child: TaskInputBar(state: _state),
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            'Focus now',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w800),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1080),
+              child: SizedBox(
+                width: double.infinity,
+                child: Stack(
+                  children: <Widget>[
+                    Column(
+                      children: <Widget>[
+                        _focusHeader(context),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                          child: _dailySnapshot(
+                            context,
+                            activeProjectName: activeProject?.name,
+                            todayCount: filteredTodayTodos.length,
+                            openCount: filteredOpenTodos.length,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Pick the best task for your current energy, then lock into one block.',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                          const SizedBox(height: 12),
+                        ),
+                        if (activeProject != null)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: HeroTaskCard(state: _state),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                            child: _projectScopeBanner(context, projectState),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 18),
-                            child: _primaryFocusSection(context),
+                        FocusModeTransition(
+                          isFocusMode: isFocusMode,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                            child: TaskInputBar(state: _state),
                           ),
-                          Text(
-                            'Task queue',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Keep Today lean and let the rest wait in backlog until it earns attention.',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
+                        ),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  'Focus now',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w800),
                                 ),
-                          ),
-                          const SizedBox(height: 12),
-                          FocusModeTransition(
-                            isFocusMode: isFocusMode,
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 14),
-                              child: TaskRiver(state: _state),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Pick the best task for your current energy, then lock into one block.',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                                const SizedBox(height: 12),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: HeroTaskCard(
+                                    state: _state,
+                                    todo: visibleHeroTodo,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 18),
+                                  child: _primaryFocusSection(context),
+                                ),
+                                Text(
+                                  'Task queue',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Keep Today lean and let the rest wait in backlog until it earns attention.',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                                const SizedBox(height: 12),
+                                FocusModeTransition(
+                                  isFocusMode: isFocusMode,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 14),
+                                    child: TaskRiver(
+                                      state: _state,
+                                      openTodos: filteredOpenTodos,
+                                      completedTodos: filteredCompletedTodos,
+                                      heroTodoId: visibleHeroTodo?.id,
+                                    ),
+                                  ),
+                                ),
+                                FocusModeTransition(
+                                  isFocusMode: isFocusMode,
+                                  child: CollapsibleSection(
+                                    title: 'Activity',
+                                    icon: Icons.insights_rounded,
+                                    isExpanded: _activityExpanded,
+                                    onToggle: () => setState(
+                                      () => _activityExpanded =
+                                          !_activityExpanded,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        SessionStatsBar(state: _state),
+                                        const SizedBox(height: 14),
+                                        ActivityHeatmap(state: _state),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          FocusModeTransition(
-                            isFocusMode: isFocusMode,
-                            child: CollapsibleSection(
-                              title: 'Activity',
-                              icon: Icons.insights_rounded,
-                              isExpanded: _activityExpanded,
-                              onToggle: () => setState(
-                                () => _activityExpanded = !_activityExpanded,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  SessionStatsBar(state: _state),
-                                  const SizedBox(height: 14),
-                                  ActivityHeatmap(state: _state),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -280,7 +326,12 @@ class _CalmScaffoldState extends State<CalmScaffold> {
     );
   }
 
-  Widget _dailySnapshot(BuildContext context) {
+  Widget _dailySnapshot(
+    BuildContext context, {
+    required String? activeProjectName,
+    required int todayCount,
+    required int openCount,
+  }) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final active = _state.activeEnergyPreset;
@@ -302,7 +353,9 @@ class _CalmScaffoldState extends State<CalmScaffold> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            '${active.label} energy is active',
+            activeProjectName == null
+                ? '${active.label} energy is active'
+                : '${active.label} energy for $activeProjectName',
             style: textTheme.labelLarge?.copyWith(
               color: active.color,
               fontWeight: FontWeight.w800,
@@ -324,14 +377,14 @@ class _CalmScaffoldState extends State<CalmScaffold> {
                 context,
                 icon: Icons.today_rounded,
                 label: 'Today',
-                value: '${_state.todayTodoCount}',
+                value: '$todayCount',
                 color: scheme.primary,
               ),
               _snapshotMetric(
                 context,
                 icon: Icons.inventory_2_rounded,
                 label: 'Open',
-                value: '${_state.openTodoCount}',
+                value: '$openCount',
                 color: scheme.tertiary,
               ),
               _snapshotMetric(
@@ -352,6 +405,81 @@ class _CalmScaffoldState extends State<CalmScaffold> {
         ],
       ),
     );
+  }
+
+  Widget _projectScopeBanner(BuildContext context, ProjectState projectState) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final activeProject = projectState.activeProject;
+    if (activeProject == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: activeProject.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: activeProject.color.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: activeProject.color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(activeProject.icon, color: activeProject.color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  '${activeProject.name} is filtering Focus',
+                  style: textTheme.titleSmall?.copyWith(
+                    color: activeProject.color,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'New captures will land in this project until you clear the scope.',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          TextButton(
+            onPressed: () => projectState.setActiveProject(null),
+            child: const Text('Show all'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<TodoItem> _filterTodos(List<TodoItem> todos, {String? projectId}) {
+    if (projectId == null) return todos;
+    return todos.where((todo) => todo.projectId == projectId).toList();
+  }
+
+  TodoItem? _pickHeroTodo(List<TodoItem> todos, String? projectId) {
+    final focused = _state.focusedTodo;
+    if (focused != null &&
+        (projectId == null || focused.projectId == projectId)) {
+      return todos.cast<TodoItem?>().firstWhere(
+        (todo) => todo?.id == focused.id,
+        orElse: () => todos.isEmpty ? null : todos.first,
+      );
+    }
+    return todos.isEmpty ? null : todos.first;
   }
 
   Widget _snapshotMetric(

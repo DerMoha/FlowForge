@@ -7,6 +7,7 @@ import '../models/project.dart';
 
 class ProjectState extends ChangeNotifier {
   static const _storageKey = 'flowforge_projects';
+  static const _activeProjectKey = 'flowforge_active_project_id';
 
   List<Project> _projects = [];
   String? _activeProjectId;
@@ -40,8 +41,14 @@ class ProjectState extends ChangeNotifier {
       _projects = jsonList
           .map((json) => Project.fromJson(json as Map<String, dynamic>))
           .toList();
+      _activeProjectId = prefs.getString(_activeProjectKey);
+      if (_activeProjectId != null &&
+          !_projects.any((project) => project.id == _activeProjectId)) {
+        _activeProjectId = null;
+      }
     } catch (_) {
       _projects = [];
+      _activeProjectId = null;
     }
   }
 
@@ -49,6 +56,11 @@ class ProjectState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final jsonList = _projects.map((p) => p.toJson()).toList();
     await prefs.setString(_storageKey, jsonEncode(jsonList));
+    if (_activeProjectId == null) {
+      await prefs.remove(_activeProjectKey);
+    } else {
+      await prefs.setString(_activeProjectKey, _activeProjectId!);
+    }
   }
 
   Future<void> _createDefaultProject() async {
@@ -60,7 +72,7 @@ class ProjectState extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
     _projects = [defaultProject];
-    _activeProjectId = defaultProject.id;
+    _activeProjectId = null;
     await _saveState();
     notifyListeners();
   }
@@ -98,15 +110,16 @@ class ProjectState extends ChangeNotifier {
     if (_projects.length <= 1) return;
     _projects.removeWhere((p) => p.id == id);
     if (_activeProjectId == id) {
-      _activeProjectId = _projects.first.id;
+      _activeProjectId = null;
     }
     await _saveState();
     notifyListeners();
   }
 
-  void setActiveProject(String? id) {
+  Future<void> setActiveProject(String? id) async {
     if (id == null || _projects.any((p) => p.id == id)) {
       _activeProjectId = id;
+      await _saveState();
       notifyListeners();
     }
   }

@@ -120,11 +120,19 @@ class _KanbanPage extends StatelessWidget {
       energy: state.energy,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: Column(
-          children: <Widget>[
-            _buildHeader(context, scheme, textTheme, isDark),
-            Expanded(child: TaskKanbanScreen(state: state)),
-          ],
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1080),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                children: <Widget>[
+                  _buildHeader(context, scheme, textTheme, isDark),
+                  Expanded(child: TaskKanbanScreen(state: state)),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

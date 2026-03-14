@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/task_energy_requirement.dart';
+import '../state/project_state.dart';
 import '../state/app_state.dart';
 import '../services/voice_service.dart';
 import 'task_detail_sections.dart';
@@ -56,6 +58,7 @@ class _TaskInputBarState extends State<TaskInputBar> {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeProject = context.watch<ProjectState>().activeProject;
     final suggestedMinutes = state.estimatedTodoMinutesFor(
       state.newTodoEnergyRequirement,
     );
@@ -113,6 +116,37 @@ class _TaskInputBarState extends State<TaskInputBar> {
             ],
           ),
           const SizedBox(height: 10),
+          if (activeProject != null) ...<Widget>[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: activeProject.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: activeProject.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Saving to ${activeProject.name}',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: activeProject.color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           Row(
             children: <Widget>[
               Expanded(
@@ -125,7 +159,7 @@ class _TaskInputBarState extends State<TaskInputBar> {
                   onChanged: (_) => state.expandTodoComposer(),
                   onSubmitted: (_) {
                     if (_isListening) _toggleVoiceInput();
-                    state.addTodo();
+                    state.addTodo(projectId: activeProject?.id);
                   },
                   decoration: InputDecoration(
                     hintText: _isListening ? 'Listening...' : 'Add a task...',
@@ -157,7 +191,7 @@ class _TaskInputBarState extends State<TaskInputBar> {
                 key: const ValueKey<String>('todo-add-button'),
                 onPressed: () {
                   if (_isListening) _toggleVoiceInput();
-                  state.addTodo();
+                  state.addTodo(projectId: activeProject?.id);
                 },
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(48, 48),

@@ -34,81 +34,91 @@ class WorkspaceHubPage extends StatelessWidget {
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            child: Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
-                  child: Row(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
                     children: <Widget>[
-                      IconButton.filledTonal(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.arrow_back_rounded),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
+                        child: Row(
                           children: <Widget>[
-                            Text(
-                              'Workspace',
-                              style: textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
+                            IconButton.filledTonal(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    'Workspace',
+                                    style: textTheme.headlineSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Projects and analytics live here so Focus and Tasks stay simple.',
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Projects and analytics live here so Focus and Tasks stay simple.',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: scheme.onSurfaceVariant,
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: _WorkspaceSummary(state: state),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHigh.withValues(
+                              alpha: 0.76,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: scheme.outlineVariant.withValues(
+                                alpha: 0.4,
                               ),
                             ),
+                          ),
+                          child: TabBar(
+                            dividerColor: Colors.transparent,
+                            padding: const EdgeInsets.all(6),
+                            indicator: BoxDecoration(
+                              color: scheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            labelColor: scheme.onPrimaryContainer,
+                            unselectedLabelColor: scheme.onSurfaceVariant,
+                            tabs: const <Widget>[
+                              Tab(text: 'Projects'),
+                              Tab(text: 'Analytics'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          children: <Widget>[
+                            _ProjectsPanel(state: state),
+                            const _AnalyticsPanel(),
                           ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: _WorkspaceSummary(state: state),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHigh.withValues(
-                        alpha: 0.76,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: scheme.outlineVariant.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: TabBar(
-                      dividerColor: Colors.transparent,
-                      padding: const EdgeInsets.all(6),
-                      indicator: BoxDecoration(
-                        color: scheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      labelColor: scheme.onPrimaryContainer,
-                      unselectedLabelColor: scheme.onSurfaceVariant,
-                      tabs: const <Widget>[
-                        Tab(text: 'Projects'),
-                        Tab(text: 'Analytics'),
-                      ],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: <Widget>[
-                      _ProjectsPanel(state: state),
-                      const _AnalyticsPanel(),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -153,11 +163,25 @@ class _WorkspaceSummary extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Use Projects to give tasks context and Analytics to review patterns without crowding the main workflow.',
+                projectState.activeProject == null
+                    ? 'Use Projects to give tasks context and Analytics to review patterns without crowding the main workflow.'
+                    : 'Project scope is active now, so Focus and Tasks are filtered to ${projectState.activeProject!.name}.',
                 style: textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
               ),
+              if (projectState.activeProject != null) ...<Widget>[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    key: const ValueKey<String>('workspace-summary-show-all'),
+                    onPressed: () => projectState.setActiveProject(null),
+                    icon: const Icon(Icons.filter_alt_off_rounded),
+                    label: const Text('Show all tasks'),
+                  ),
+                ),
+              ],
               const SizedBox(height: 14),
               Wrap(
                 spacing: 10,
@@ -293,17 +317,34 @@ class _ProjectsPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                FilledButton.icon(
-                  onPressed: () => _showProjectEditor(context),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    if (activeProject != null)
+                      OutlinedButton.icon(
+                        onPressed: () => projectState.setActiveProject(null),
+                        icon: const Icon(Icons.filter_alt_off_rounded),
+                        label: const Text('Show All'),
+                      ),
+                    FilledButton.icon(
+                      onPressed: () => _showProjectEditor(context),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Add'),
+                    ),
+                  ],
                 ),
               ],
             ),
-            if (activeProject != null) ...<Widget>[
-              const SizedBox(height: 16),
-              _ActiveProjectCard(project: activeProject, state: state),
-            ],
+            const SizedBox(height: 16),
+            if (activeProject != null)
+              _ActiveProjectCard(
+                project: activeProject,
+                state: state,
+                onClear: () => projectState.setActiveProject(null),
+              )
+            else
+              _AllProjectsCard(state: state),
             const SizedBox(height: 16),
             ...projects.map(
               (project) => Padding(
@@ -363,10 +404,15 @@ class _ProjectsPanel extends StatelessWidget {
 }
 
 class _ActiveProjectCard extends StatelessWidget {
-  const _ActiveProjectCard({required this.project, required this.state});
+  const _ActiveProjectCard({
+    required this.project,
+    required this.state,
+    required this.onClear,
+  });
 
   final Project project;
   final FlowForgeState state;
+  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
@@ -380,6 +426,7 @@ class _ActiveProjectCard extends StatelessWidget {
         .length;
 
     return Container(
+      key: const ValueKey<String>('workspace-active-project-card'),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow.withValues(alpha: 0.88),
@@ -446,6 +493,72 @@ class _ActiveProjectCard extends StatelessWidget {
                 icon: Icons.check_circle_rounded,
                 label: 'Done',
                 value: '$doneCount',
+                color: scheme.secondary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            key: const ValueKey<String>('workspace-show-all-projects'),
+            onPressed: onClear,
+            icon: const Icon(Icons.filter_alt_off_rounded),
+            label: const Text('Show all tasks'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllProjectsCard extends StatelessWidget {
+  const _AllProjectsCard({required this.state});
+
+  final FlowForgeState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      key: const ValueKey<String>('workspace-all-projects-card'),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'All tasks are visible',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Choose an active project only when you want Focus and Tasks to narrow down to one stream of work.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: <Widget>[
+              _SummaryPill(
+                icon: Icons.inventory_2_rounded,
+                label: 'Open',
+                value: '${state.openTodoCount}',
+                color: scheme.primary,
+              ),
+              _SummaryPill(
+                icon: Icons.check_circle_rounded,
+                label: 'Done',
+                value: '${state.completedTodoCount}',
                 color: scheme.secondary,
               ),
             ],
@@ -577,6 +690,7 @@ class _ProjectCard extends StatelessWidget {
             children: <Widget>[
               if (!isActive)
                 FilledButton.tonalIcon(
+                  key: ValueKey<String>('set-active-project-${project.id}'),
                   onPressed: onSetActive,
                   icon: const Icon(Icons.push_pin_outlined),
                   label: const Text('Set Active'),

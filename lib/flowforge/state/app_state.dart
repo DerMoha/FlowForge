@@ -632,7 +632,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
   // ---------------------------------------------------------------------------
   // Todos
   // ---------------------------------------------------------------------------
-  void addTodo() {
+  void addTodo({String? projectId}) {
     final text = todoInputController.text.trim();
     if (text.isEmpty) {
       return;
@@ -648,6 +648,7 @@ class FlowForgeState extends ChangeNotifier with WidgetsBindingObserver {
       estimateMinutes: newTodoEstimateMinutes,
       status: TaskStatus.backlog,
       deadline: normalizedDeadline,
+      projectId: projectId,
     );
 
     final updatedTodos = <TodoItem>[...todos, item];
