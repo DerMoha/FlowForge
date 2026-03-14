@@ -3,14 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
 
 /// Haptic feedback patterns
-enum HapticPattern {
-  light,
-  medium,
-  heavy,
-  success,
-  warning,
-  error,
-}
+enum HapticPattern { light, medium, heavy, success, warning, error }
 
 /// Haptic feedback service
 class HapticService {
@@ -28,7 +21,7 @@ class HapticService {
     if (!_isEnabled) return;
 
     try {
-      final hasVibrator = await Vibration.hasVibrator() ?? false;
+      final hasVibrator = await Vibration.hasVibrator();
       if (!hasVibrator) {
         // Fallback to system haptics
         _triggerSystemHaptic(pattern);
@@ -112,12 +105,7 @@ class _SpringAnimationState extends State<SpringAnimation>
     _scaleAnimation = Tween<double>(
       begin: widget.initialScale,
       end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.elasticOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
 
     _controller.forward();
   }
@@ -130,10 +118,7 @@ class _SpringAnimationState extends State<SpringAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: widget.child,
-    );
+    return ScaleTransition(scale: _scaleAnimation, child: widget.child);
   }
 }
 
@@ -196,7 +181,7 @@ class _PulseRingState extends State<PulseRing>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: color.withOpacity(opacity),
+                      color: color.withValues(alpha: opacity),
                       width: 2,
                     ),
                   ),
@@ -238,20 +223,13 @@ class _BreathingAnimationState extends State<BreathingAnimation>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat(reverse: true);
 
     _scaleAnimation = Tween<double>(
       begin: widget.minScale,
       end: widget.maxScale,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -262,10 +240,7 @@ class _BreathingAnimationState extends State<BreathingAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: widget.child,
-    );
+    return ScaleTransition(scale: _scaleAnimation, child: widget.child);
   }
 }
 
@@ -302,12 +277,7 @@ class _BouncyButtonState extends State<BouncyButton>
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -336,10 +306,7 @@ class _BouncyButtonState extends State<BouncyButton>
       onTapUp: _handleTapUp,
       onTapCancel: () => _controller.reverse(),
       onTap: _handleTap,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: widget.child,
-      ),
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
     );
   }
 }
@@ -383,10 +350,12 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final baseColor = widget.baseColor ??
-        theme.colorScheme.surfaceContainerHighest.withOpacity(0.3);
+    final baseColor =
+        widget.baseColor ??
+        theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3);
     final highlightColor =
-        widget.highlightColor ?? theme.colorScheme.surface.withOpacity(0.5);
+        widget.highlightColor ??
+        theme.colorScheme.surface.withValues(alpha: 0.5);
 
     return AnimatedBuilder(
       animation: _controller,
@@ -396,16 +365,8 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
             return LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                baseColor,
-                highlightColor,
-                baseColor,
-              ],
-              stops: [
-                0.0,
-                _controller.value,
-                1.0,
-              ],
+              colors: [baseColor, highlightColor, baseColor],
+              stops: [0.0, _controller.value, 1.0],
               tileMode: TileMode.mirror,
             ).createShader(bounds);
           },

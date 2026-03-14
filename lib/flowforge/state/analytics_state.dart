@@ -201,7 +201,7 @@ class AnalyticsState extends ChangeNotifier {
       // Load energy history
       final energyJson = prefs.getStringList('analytics_energy_history') ?? [];
       _energyHistory.clear();
-      for (final json in energyJson) {
+      for (final _ in energyJson) {
         try {
           // In real implementation, parse JSON properly
           // _energyHistory.add(EnergyDataPoint.fromJson(jsonDecode(json)));
@@ -213,7 +213,7 @@ class AnalyticsState extends ChangeNotifier {
       // Load snapshots
       final snapshotsJson = prefs.getStringList('analytics_snapshots') ?? [];
       _snapshots.clear();
-      for (final json in snapshotsJson) {
+      for (final _ in snapshotsJson) {
         try {
           // In real implementation, parse JSON properly
           // final snapshot = AnalyticsSnapshot.fromJson(jsonDecode(json));

@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/daily_session_activity.dart';
 
-enum HeatmapMetric {
-  sessions,
-  minutes,
-  intensity,
-}
+enum HeatmapMetric { sessions, minutes, intensity }
 
 /// Enhanced activity heatmap with 3D effects and interactions
 class EnhancedActivityHeatmap extends StatefulWidget {
@@ -23,7 +19,8 @@ class EnhancedActivityHeatmap extends StatefulWidget {
   final double cellSpacing;
 
   @override
-  State<EnhancedActivityHeatmap> createState() => _EnhancedActivityHeatmapState();
+  State<EnhancedActivityHeatmap> createState() =>
+      _EnhancedActivityHeatmapState();
 }
 
 class _EnhancedActivityHeatmapState extends State<EnhancedActivityHeatmap> {
@@ -43,13 +40,15 @@ class _EnhancedActivityHeatmapState extends State<EnhancedActivityHeatmap> {
       case HeatmapMetric.minutes:
         return activity.minutes;
       case HeatmapMetric.intensity:
-        return activity.sessions > 0 ? (activity.minutes / activity.sessions).round() : 0;
+        return activity.sessions > 0
+            ? (activity.minutes / activity.sessions).round()
+            : 0;
     }
   }
 
   Color _getColorForValue(int value, int maxValue) {
     if (value == 0) {
-      return Colors.grey.withOpacity(0.1);
+      return Colors.grey.withValues(alpha: 0.1);
     }
 
     final intensity = (value / maxValue).clamp(0.0, 1.0);
@@ -57,7 +56,7 @@ class _EnhancedActivityHeatmapState extends State<EnhancedActivityHeatmap> {
 
     // Create gradient from primary to secondary based on intensity
     return Color.lerp(
-      theme.colorScheme.primary.withOpacity(0.3),
+      theme.colorScheme.primary.withValues(alpha: 0.3),
       theme.colorScheme.secondary,
       intensity,
     )!;
@@ -68,13 +67,10 @@ class _EnhancedActivityHeatmapState extends State<EnhancedActivityHeatmap> {
     final theme = Theme.of(context);
 
     // Calculate max value for scaling
-    final maxValue = widget.activities.fold<int>(
-      0,
-      (max, activity) {
-        final value = _getMetricValue(activity);
-        return value > max ? value : max;
-      },
-    );
+    final maxValue = widget.activities.fold<int>(0, (max, activity) {
+      final value = _getMetricValue(activity);
+      return value > max ? value : max;
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,17 +82,20 @@ class _EnhancedActivityHeatmapState extends State<EnhancedActivityHeatmap> {
             _MetricChip(
               label: 'Sessions',
               isSelected: _currentMetric == HeatmapMetric.sessions,
-              onTap: () => setState(() => _currentMetric = HeatmapMetric.sessions),
+              onTap: () =>
+                  setState(() => _currentMetric = HeatmapMetric.sessions),
             ),
             _MetricChip(
               label: 'Minutes',
               isSelected: _currentMetric == HeatmapMetric.minutes,
-              onTap: () => setState(() => _currentMetric = HeatmapMetric.minutes),
+              onTap: () =>
+                  setState(() => _currentMetric = HeatmapMetric.minutes),
             ),
             _MetricChip(
               label: 'Intensity',
               isSelected: _currentMetric == HeatmapMetric.intensity,
-              onTap: () => setState(() => _currentMetric = HeatmapMetric.intensity),
+              onTap: () =>
+                  setState(() => _currentMetric = HeatmapMetric.intensity),
             ),
           ],
         ),
@@ -114,10 +113,7 @@ class _EnhancedActivityHeatmapState extends State<EnhancedActivityHeatmap> {
         // Tooltip
         if (_hoveredActivity != null) ...[
           const SizedBox(height: 12),
-          _HeatmapTooltip(
-            activity: _hoveredActivity!,
-            metric: _currentMetric,
-          ),
+          _HeatmapTooltip(activity: _hoveredActivity!, metric: _currentMetric),
         ],
 
         const SizedBox(height: 16),
@@ -228,15 +224,12 @@ class _HeatmapCell extends StatelessWidget {
         color: color,
         borderRadius: BorderRadius.circular(2),
         border: isHovered
-            ? Border.all(
-                color: Theme.of(context).colorScheme.primary,
-                width: 2,
-              )
+            ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
             : null,
         boxShadow: value > 0
             ? [
                 BoxShadow(
-                  color: color.withOpacity(0.5),
+                  color: color.withValues(alpha: 0.5),
                   blurRadius: isHovered ? 4 : 2,
                   offset: Offset(0, isHovered ? 2 : 1),
                 ),
@@ -279,10 +272,7 @@ class _MetricChip extends StatelessWidget {
 }
 
 class _HeatmapTooltip extends StatelessWidget {
-  const _HeatmapTooltip({
-    required this.activity,
-    required this.metric,
-  });
+  const _HeatmapTooltip({required this.activity, required this.metric});
 
   final DailySessionActivity activity;
   final HeatmapMetric metric;
@@ -294,7 +284,8 @@ class _HeatmapTooltip extends StatelessWidget {
     String metricText;
     switch (metric) {
       case HeatmapMetric.sessions:
-        metricText = '${activity.sessions} session${activity.sessions != 1 ? 's' : ''}';
+        metricText =
+            '${activity.sessions} session${activity.sessions != 1 ? 's' : ''}';
         break;
       case HeatmapMetric.minutes:
         metricText = '${activity.minutes} minutes';
@@ -313,7 +304,7 @@ class _HeatmapTooltip extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -341,8 +332,18 @@ class _HeatmapTooltip extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -350,10 +351,7 @@ class _HeatmapTooltip extends StatelessWidget {
 
 /// Compact year-in-review visualization
 class YearInReview extends StatefulWidget {
-  const YearInReview({
-    super.key,
-    required this.activities,
-  });
+  const YearInReview({super.key, required this.activities});
 
   final List<DailySessionActivity> activities;
 
@@ -449,12 +447,7 @@ class _YearInReviewState extends State<YearInReview>
         children: [
           Icon(icon, color: theme.colorScheme.primary),
           const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodyLarge,
-            ),
-          ),
+          Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
           Text(
             '$value',
             style: theme.textTheme.headlineSmall?.copyWith(

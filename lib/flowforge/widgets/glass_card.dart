@@ -36,13 +36,15 @@ class GlassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         border: showBorder
             ? Border.all(
-                color: theme.colorScheme.outline.withOpacity(borderOpacity),
+                color: theme.colorScheme.outline.withValues(
+                  alpha: borderOpacity,
+                ),
                 width: 1,
               )
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -52,22 +54,20 @@ class GlassCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: blurSigma,
-            sigmaY: blurSigma,
-          ),
+          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
           child: Container(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest
-                  .withOpacity(opacity),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: opacity,
+              ),
               borderRadius: BorderRadius.circular(borderRadius),
               gradient: showTopHighlight
                   ? LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withOpacity(0.1),
-                        Colors.white.withOpacity(0.05),
+                        Colors.white.withValues(alpha: 0.1),
+                        Colors.white.withValues(alpha: 0.05),
                         Colors.transparent,
                       ],
                       stops: const [0.0, 0.3, 1.0],
@@ -123,8 +123,6 @@ class GlassButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -203,22 +201,19 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
           height: height + MediaQuery.of(context).padding.top,
           padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withOpacity(0.7),
+            color: theme.colorScheme.surface.withValues(alpha: 0.7),
             border: Border(
               bottom: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.1),
+                color: theme.colorScheme.outline.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
           ),
           child: Row(
             children: [
-              if (leading != null) leading!,
-              if (leading == null) const SizedBox(width: 16),
-              Expanded(
-                child: title ?? const SizedBox.shrink(),
-              ),
-              if (actions != null) ...actions!,
+              leading ?? const SizedBox(width: 16),
+              Expanded(child: title ?? const SizedBox.shrink()),
+              ...?actions,
               const SizedBox(width: 8),
             ],
           ),

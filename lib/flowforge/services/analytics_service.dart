@@ -68,11 +68,14 @@ class AnalyticsService {
     final now = DateTime.now();
     final cutoff = now.subtract(Duration(days: weeks * 7));
 
-    final recentCompletions = tasks.where((task) =>
-        task.isDone &&
-        task.completedAt != null &&
-        task.completedAt!.isAfter(cutoff)
-    ).length;
+    final recentCompletions = tasks
+        .where(
+          (task) =>
+              task.isDone &&
+              task.completedAt != null &&
+              task.completedAt!.isAfter(cutoff),
+        )
+        .length;
 
     return recentCompletions / weeks;
   }
@@ -95,7 +98,11 @@ class AnalyticsService {
     // Group by day and calculate daily average
     final dailyAverages = <DateTime, List<int>>{};
     for (final point in recentData) {
-      final day = DateTime(point.timestamp.year, point.timestamp.month, point.timestamp.day);
+      final day = DateTime(
+        point.timestamp.year,
+        point.timestamp.month,
+        point.timestamp.day,
+      );
       dailyAverages.putIfAbsent(day, () => []).add(point.energy);
     }
 
@@ -105,7 +112,9 @@ class AnalyticsService {
 
     final sortedDays = dailyAverages.keys.toList()..sort();
     for (final day in sortedDays) {
-      final avg = dailyAverages[day]!.reduce((a, b) => a + b) / dailyAverages[day]!.length;
+      final avg =
+          dailyAverages[day]!.reduce((a, b) => a + b) /
+          dailyAverages[day]!.length;
       if (avg < 50) {
         consecutiveLowDays++;
         if (consecutiveLowDays > maxConsecutive) {
@@ -130,32 +139,40 @@ class AnalyticsService {
     // Peak time insight
     final peakTimes = analyzePeakTimes(logs);
     if (peakTimes.isNotEmpty) {
-      final bestHour = peakTimes.entries.reduce((a, b) =>
-        a.value > b.value ? a : b
-      ).key;
-      final period = bestHour < 12 ? 'morning' : (bestHour < 17 ? 'afternoon' : 'evening');
-      insights.add('You\'re most productive in the $period (around ${bestHour}:00)');
+      final bestHour = peakTimes.entries
+          .reduce((a, b) => a.value > b.value ? a : b)
+          .key;
+      final period = bestHour < 12
+          ? 'morning'
+          : (bestHour < 17 ? 'afternoon' : 'evening');
+      insights.add(
+        'You\'re most productive in the $period (around $bestHour:00)',
+      );
     }
 
     // Energy pattern insight
     final energyPatterns = analyzeEnergyPatterns(energyData);
     if (energyPatterns.isNotEmpty) {
-      final highEnergyHour = energyPatterns.entries.reduce((a, b) =>
-        a.value > b.value ? a : b
-      ).key;
-      insights.add('Your energy peaks around ${highEnergyHour}:00');
+      final highEnergyHour = energyPatterns.entries
+          .reduce((a, b) => a.value > b.value ? a : b)
+          .key;
+      insights.add('Your energy peaks around $highEnergyHour:00');
     }
 
     // Velocity insight
     final velocity = calculateVelocity(tasks, 4);
     if (velocity > 0) {
-      insights.add('You complete an average of ${velocity.toStringAsFixed(1)} tasks per week');
+      insights.add(
+        'You complete an average of ${velocity.toStringAsFixed(1)} tasks per week',
+      );
     }
 
     // Burnout warning
     final burnoutRisk = detectBurnoutRisk(energyData);
     if (burnoutRisk >= 3) {
-      insights.add('Warning: ${burnoutRisk} consecutive low-energy days detected. Consider rest.');
+      insights.add(
+        'Warning: $burnoutRisk consecutive low-energy days detected. Consider rest.',
+      );
     }
 
     return insights;
@@ -171,26 +188,44 @@ class AnalyticsService {
     final dayStart = DateTime(date.year, date.month, date.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
 
-    final daySessions = logs.where((log) =>
-      log.completedAt.isAfter(dayStart) && log.completedAt.isBefore(dayEnd)
-    ).toList();
+    final daySessions = logs
+        .where(
+          (log) =>
+              log.completedAt.isAfter(dayStart) &&
+              log.completedAt.isBefore(dayEnd),
+        )
+        .toList();
 
-    final dayEnergy = energyData.where((point) =>
-      point.timestamp.isAfter(dayStart) && point.timestamp.isBefore(dayEnd)
-    ).toList();
+    final dayEnergy = energyData
+        .where(
+          (point) =>
+              point.timestamp.isAfter(dayStart) &&
+              point.timestamp.isBefore(dayEnd),
+        )
+        .toList();
 
-    final tasksCompleted = tasks.where((task) =>
-      task.isDone &&
-      task.completedAt != null &&
-      task.completedAt!.isAfter(dayStart) &&
-      task.completedAt!.isBefore(dayEnd)
-    ).length;
+    final tasksCompleted = tasks
+        .where(
+          (task) =>
+              task.isDone &&
+              task.completedAt != null &&
+              task.completedAt!.isAfter(dayStart) &&
+              task.completedAt!.isBefore(dayEnd),
+        )
+        .length;
 
-    final tasksCreated = tasks.where((task) =>
-      task.createdAt.isAfter(dayStart) && task.createdAt.isBefore(dayEnd)
-    ).length;
+    final tasksCreated = tasks
+        .where(
+          (task) =>
+              task.createdAt.isAfter(dayStart) &&
+              task.createdAt.isBefore(dayEnd),
+        )
+        .length;
 
-    final totalMinutes = daySessions.fold<int>(0, (sum, log) => sum + log.minutes);
+    final totalMinutes = daySessions.fold<int>(
+      0,
+      (sum, log) => sum + log.minutes,
+    );
 
     double avgEnergy = 0;
     int minEnergy = 0;

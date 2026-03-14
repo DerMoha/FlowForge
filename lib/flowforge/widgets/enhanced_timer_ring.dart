@@ -99,7 +99,7 @@ class _TimerRingPainter extends CustomPainter {
 
     // Background ring
     final backgroundPaint = Paint()
-      ..color = primaryColor.withOpacity(0.1)
+      ..color = primaryColor.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -127,19 +127,13 @@ class _TimerRingPainter extends CustomPainter {
             startAngle: startAngle,
             endAngle: startAngle + sweepAngle,
             colors: [
-              ...gradientColors.map((c) => c.withOpacity(0.3)),
-              gradientColors.last.withOpacity(0.8),
+              ...gradientColors.map((c) => c.withValues(alpha: 0.3)),
+              gradientColors.last.withValues(alpha: 0.8),
             ],
             transform: const GradientRotation(-pi / 2),
           ).createShader(rect);
 
-        canvas.drawArc(
-          rect,
-          startAngle,
-          sweepAngle,
-          false,
-          trailPaint,
-        );
+        canvas.drawArc(rect, startAngle, sweepAngle, false, trailPaint);
       }
 
       // Main progress arc with gradient
@@ -152,13 +146,7 @@ class _TimerRingPainter extends CustomPainter {
           transform: const GradientRotation(-pi / 2),
         ).createShader(rect);
 
-      canvas.drawArc(
-        rect,
-        startAngle,
-        sweepAngle,
-        false,
-        progressPaint,
-      );
+      canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
 
       // Glow effect
       if (showGlow) {
@@ -167,18 +155,14 @@ class _TimerRingPainter extends CustomPainter {
           ..strokeWidth = strokeWidth * 2
           ..strokeCap = StrokeCap.round
           ..shader = SweepGradient(
-            colors: gradientColors.map((c) => c.withOpacity(glowIntensity * 0.3)).toList(),
+            colors: gradientColors
+                .map((c) => c.withValues(alpha: glowIntensity * 0.3))
+                .toList(),
             transform: const GradientRotation(-pi / 2),
           ).createShader(rect)
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, strokeWidth / 2);
 
-        canvas.drawArc(
-          rect,
-          startAngle,
-          sweepAngle,
-          false,
-          glowPaint,
-        );
+        canvas.drawArc(rect, startAngle, sweepAngle, false, glowPaint);
       }
 
       // Indicator dot at current position
@@ -190,10 +174,14 @@ class _TimerRingPainter extends CustomPainter {
       // Outer glow for indicator
       if (showGlow) {
         final indicatorGlowPaint = Paint()
-          ..color = secondaryColor.withOpacity(glowIntensity * 0.5)
+          ..color = secondaryColor.withValues(alpha: glowIntensity * 0.5)
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, strokeWidth);
 
-        canvas.drawCircle(indicatorPosition, strokeWidth * 0.8, indicatorGlowPaint);
+        canvas.drawCircle(
+          indicatorPosition,
+          strokeWidth * 0.8,
+          indicatorGlowPaint,
+        );
       }
 
       // Indicator dot
@@ -208,7 +196,11 @@ class _TimerRingPainter extends CustomPainter {
         ..color = Colors.white
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(indicatorPosition, strokeWidth * 0.25, indicatorInnerPaint);
+      canvas.drawCircle(
+        indicatorPosition,
+        strokeWidth * 0.25,
+        indicatorInnerPaint,
+      );
     }
   }
 
@@ -272,10 +264,7 @@ class _FlipBoardDigitState extends State<_FlipBoardDigit>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
   }
 
   @override
@@ -307,7 +296,7 @@ class _FlipBoardDigitState extends State<_FlipBoardDigit>
             color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.2),
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
               width: 1,
             ),
           ),

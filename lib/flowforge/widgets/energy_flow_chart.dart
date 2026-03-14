@@ -88,7 +88,7 @@ class EnergyFlowChart extends StatelessWidget {
         horizontalInterval: 20,
         getDrawingHorizontalLine: (value) {
           return FlLine(
-            color: theme.colorScheme.outline.withOpacity(0.1),
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
             strokeWidth: 1,
           );
         },
@@ -101,7 +101,7 @@ class EnergyFlowChart extends StatelessWidget {
             reservedSize: 40,
             getTitlesWidget: (value, meta) {
               return Text(
-                '${value.toInt()}',
+                value.toInt().toString(),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -112,9 +112,7 @@ class EnergyFlowChart extends StatelessWidget {
         rightTitles: const AxisTitles(
           sideTitles: SideTitles(showTitles: false),
         ),
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
@@ -164,8 +162,8 @@ class EnergyFlowChart extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                theme.colorScheme.primary.withOpacity(0.3),
-                theme.colorScheme.primary.withOpacity(0.05),
+                theme.colorScheme.primary.withValues(alpha: 0.3),
+                theme.colorScheme.primary.withValues(alpha: 0.05),
               ],
             ),
           ),
@@ -177,7 +175,7 @@ class EnergyFlowChart extends StatelessWidget {
             spots: predictionSpots,
             isCurved: true,
             curveSmoothness: 0.4,
-            color: theme.colorScheme.secondary.withOpacity(0.5),
+            color: theme.colorScheme.secondary.withValues(alpha: 0.5),
             barWidth: 2,
             isStrokeCapRound: true,
             dashArray: [5, 5],
@@ -191,7 +189,7 @@ class EnergyFlowChart extends StatelessWidget {
               final hour = spot.x.toInt();
               final energy = spot.y.toInt();
               return LineTooltipItem(
-                '${hour}:00\n$energy energy',
+                '$hour:00\n$energy energy',
                 theme.textTheme.labelSmall!.copyWith(
                   color: theme.colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
@@ -207,10 +205,7 @@ class EnergyFlowChart extends StatelessWidget {
 
 /// Productivity velocity chart (tasks per week)
 class VelocityChart extends StatelessWidget {
-  const VelocityChart({
-    super.key,
-    required this.weeklyData,
-  });
+  const VelocityChart({super.key, required this.weeklyData});
 
   final Map<int, int> weeklyData; // week number -> task count
 
@@ -244,7 +239,7 @@ class VelocityChart extends StatelessWidget {
               drawVerticalLine: false,
               getDrawingHorizontalLine: (value) {
                 return FlLine(
-                  color: theme.colorScheme.outline.withOpacity(0.1),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
                   strokeWidth: 1,
                 );
               },
@@ -256,7 +251,7 @@ class VelocityChart extends StatelessWidget {
                   reservedSize: 40,
                   getTitlesWidget: (value, meta) {
                     return Text(
-                      '${value.toInt()}',
+                      value.toInt().toString(),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -310,8 +305,8 @@ class VelocityChart extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      theme.colorScheme.secondary.withOpacity(0.3),
-                      theme.colorScheme.secondary.withOpacity(0.05),
+                      theme.colorScheme.secondary.withValues(alpha: 0.3),
+                      theme.colorScheme.secondary.withValues(alpha: 0.05),
                     ],
                   ),
                 ),
@@ -326,10 +321,7 @@ class VelocityChart extends StatelessWidget {
 
 /// Focus quality radar chart
 class FocusQualityRadar extends StatelessWidget {
-  const FocusQualityRadar({
-    super.key,
-    required this.metrics,
-  });
+  const FocusQualityRadar({super.key, required this.metrics});
 
   final Map<String, double> metrics; // metric name -> score (0-100)
 
@@ -360,29 +352,28 @@ class FocusQualityRadar extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             radarBorderData: BorderSide(
-              color: theme.colorScheme.outline.withOpacity(0.2),
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
               width: 2,
             ),
             gridBorderData: BorderSide(
-              color: theme.colorScheme.outline.withOpacity(0.1),
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
               width: 1,
             ),
             tickBorderData: BorderSide(
-              color: theme.colorScheme.outline.withOpacity(0.1),
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
               width: 1,
             ),
             getTitle: (index, angle) {
               final entries = metrics.entries.toList();
-              if (index >= entries.length) return const RadarChartTitle(text: '');
+              if (index >= entries.length) {
+                return const RadarChartTitle(text: '');
+              }
 
-              return RadarChartTitle(
-                text: entries[index].key,
-                angle: angle,
-              );
+              return RadarChartTitle(text: entries[index].key, angle: angle);
             },
             dataSets: [
               RadarDataSet(
-                fillColor: theme.colorScheme.primary.withOpacity(0.3),
+                fillColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                 borderColor: theme.colorScheme.primary,
                 borderWidth: 2,
                 dataEntries: metrics.values.map((value) {

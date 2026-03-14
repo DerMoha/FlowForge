@@ -33,10 +33,7 @@ class KeyboardShortcutsService {
   void init() {
     // Global shortcuts
     _registerShortcut(
-      LogicalKeySet(
-        LogicalKeyboardKey.meta,
-        LogicalKeyboardKey.keyN,
-      ),
+      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyN),
       ShortcutAction.newTask,
     );
 
@@ -46,43 +43,28 @@ class KeyboardShortcutsService {
     );
 
     _registerShortcut(
-      LogicalKeySet(
-        LogicalKeyboardKey.meta,
-        LogicalKeyboardKey.keyK,
-      ),
+      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK),
       ShortcutAction.commandPalette,
     );
 
     // Energy presets
     _registerShortcut(
-      LogicalKeySet(
-        LogicalKeyboardKey.meta,
-        LogicalKeyboardKey.digit1,
-      ),
+      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit1),
       ShortcutAction.setEnergyLow,
     );
 
     _registerShortcut(
-      LogicalKeySet(
-        LogicalKeyboardKey.meta,
-        LogicalKeyboardKey.digit2,
-      ),
+      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit2),
       ShortcutAction.setEnergyMedium,
     );
 
     _registerShortcut(
-      LogicalKeySet(
-        LogicalKeyboardKey.meta,
-        LogicalKeyboardKey.digit3,
-      ),
+      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit3),
       ShortcutAction.setEnergyHigh,
     );
 
     _registerShortcut(
-      LogicalKeySet(
-        LogicalKeyboardKey.meta,
-        LogicalKeyboardKey.digit4,
-      ),
+      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit4),
       ShortcutAction.setEnergyDeep,
     );
 
@@ -253,7 +235,10 @@ class ShortcutsOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildShortcutBadge(BuildContext context, ShortcutActivator activator) {
+  Widget _buildShortcutBadge(
+    BuildContext context,
+    ShortcutActivator activator,
+  ) {
     final theme = Theme.of(context);
     // Simplified display - would need proper formatting
     return Container(
@@ -262,14 +247,12 @@ class ShortcutsOverlay extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Text(
         activator.toString(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontFamily: 'monospace',
-        ),
+        style: theme.textTheme.labelSmall?.copyWith(fontFamily: 'monospace'),
       ),
     );
   }

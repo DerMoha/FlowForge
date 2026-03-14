@@ -1,6 +1,5 @@
 import '../models/todo_item.dart';
 import '../models/recurrence_rule.dart';
-import '../models/task_energy_requirement.dart';
 
 /// Manages recurring task generation and tracking
 class RecurrenceManager {

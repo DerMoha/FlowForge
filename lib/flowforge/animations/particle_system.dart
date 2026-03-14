@@ -65,10 +65,7 @@ class _ParticleSystemState extends State<ParticleSystem>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _controller.addListener(() {
       setState(() {
@@ -93,24 +90,27 @@ class _ParticleSystemState extends State<ParticleSystem>
       final angle = _random.nextDouble() * 2 * pi;
       final speed = 100 + _random.nextDouble() * 300;
 
-      _particles.add(Particle(
-        position: Offset.zero,
-        velocity: Offset(
-          cos(angle) * speed,
-          sin(angle) * speed - 200, // Initial upward velocity
+      _particles.add(
+        Particle(
+          position: Offset.zero,
+          velocity: Offset(
+            cos(angle) * speed,
+            sin(angle) * speed - 200, // Initial upward velocity
+          ),
+          color: widget.colors[_random.nextInt(widget.colors.length)],
+          size:
+              widget.minSize +
+              _random.nextDouble() * (widget.maxSize - widget.minSize),
+          lifetime: 1.5 + _random.nextDouble() * 1.5,
         ),
-        color: widget.colors[_random.nextInt(widget.colors.length)],
-        size: widget.minSize +
-            _random.nextDouble() * (widget.maxSize - widget.minSize),
-        lifetime: 1.5 + _random.nextDouble() * 1.5,
-      ));
+      );
     }
   }
 
   void _updateParticles(int elapsedMs) {
     final dt = elapsedMs / 1000.0;
     for (final particle in _particles) {
-      particle.update(0.016); // ~60fps
+      particle.update(dt);
     }
   }
 
@@ -137,7 +137,7 @@ class _ParticlePainter extends CustomPainter {
       if (particle.isDead) continue;
 
       final paint = Paint()
-        ..color = particle.color.withOpacity(particle.alpha)
+        ..color = particle.color.withValues(alpha: particle.alpha)
         ..style = PaintingStyle.fill;
 
       final position = Offset(
@@ -243,14 +243,17 @@ class _SparkleTrailPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var i = 0; i < positions.length; i++) {
-      final sparkleProgress = (progress - (i / positions.length)).clamp(0.0, 1.0);
+      final sparkleProgress = (progress - (i / positions.length)).clamp(
+        0.0,
+        1.0,
+      );
       if (sparkleProgress <= 0) continue;
 
       final alpha = (1.0 - sparkleProgress);
       final sparkleSize = 6.0 * sparkleProgress;
 
       final paint = Paint()
-        ..color = color.withOpacity(alpha)
+        ..color = color.withValues(alpha: alpha)
         ..style = PaintingStyle.fill;
 
       // Draw star shape
@@ -325,13 +328,15 @@ class _AmbientParticlesState extends State<AmbientParticles>
 
   void _initializeParticles() {
     for (var i = 0; i < widget.particleCount; i++) {
-      _particles.add(_AmbientParticle(
-        x: _random.nextDouble(),
-        y: _random.nextDouble(),
-        size: 1 + _random.nextDouble() * 3,
-        speed: 0.1 + _random.nextDouble() * 0.2,
-        phase: _random.nextDouble() * 2 * pi,
-      ));
+      _particles.add(
+        _AmbientParticle(
+          x: _random.nextDouble(),
+          y: _random.nextDouble(),
+          size: 1 + _random.nextDouble() * 3,
+          speed: 0.1 + _random.nextDouble() * 0.2,
+          phase: _random.nextDouble() * 2 * pi,
+        ),
+      );
     }
   }
 
@@ -385,10 +390,13 @@ class _AmbientParticlesPainter extends CustomPainter {
       final x = particle.x * size.width + xOffset;
       final y = particle.y * size.height + yOffset;
 
-      final alpha = (sin(time * 2 * pi + particle.phase) * 0.3 + 0.4).clamp(0.0, 1.0);
+      final alpha = (sin(time * 2 * pi + particle.phase) * 0.3 + 0.4).clamp(
+        0.0,
+        1.0,
+      );
 
       final paint = Paint()
-        ..color = color.withOpacity(alpha * 0.3)
+        ..color = color.withValues(alpha: alpha * 0.3)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(Offset(x, y), particle.size, paint);
