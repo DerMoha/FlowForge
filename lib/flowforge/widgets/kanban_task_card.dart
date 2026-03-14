@@ -7,21 +7,13 @@ import '../models/todo_item.dart';
 import '../state/app_state.dart';
 import '../state/project_state.dart';
 import '../utils/date_helpers.dart';
-import 'task_detail_sections.dart';
+import 'task_editor_sheet.dart';
 
 class KanbanTaskCard extends StatelessWidget {
-  const KanbanTaskCard({
-    super.key,
-    required this.todo,
-    required this.state,
-    this.onTap,
-    this.onDelete,
-  });
+  const KanbanTaskCard({super.key, required this.todo, required this.state});
 
   final TodoItem todo;
   final FlowForgeState state;
-  final VoidCallback? onTap;
-  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -31,51 +23,13 @@ class KanbanTaskCard extends StatelessWidget {
     final isOverdue = todo.isOverdue;
     final dueDateText = formatDueDate(todo.deadline);
 
-    return Draggable<TodoItem>(
-      data: todo,
-      feedback: Material(
-        elevation: 6,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 280,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: todo.energyRequirement.accent.withValues(alpha: 0.5),
-              width: 2,
-            ),
-          ),
-          child: _buildContent(
-            context,
-            scheme,
-            textTheme,
-            isDark,
-            isOverdue,
-            dueDateText,
-          ),
-        ),
-      ),
-      childWhenDragging: Opacity(
-        opacity: 0.5,
-        child: _buildCard(
-          context,
-          scheme,
-          textTheme,
-          isDark,
-          isOverdue,
-          dueDateText,
-        ),
-      ),
-      child: _buildCard(
-        context,
-        scheme,
-        textTheme,
-        isDark,
-        isOverdue,
-        dueDateText,
-      ),
+    return _buildCard(
+      context,
+      scheme,
+      textTheme,
+      isDark,
+      isOverdue,
+      dueDateText,
     );
   }
 
@@ -125,12 +79,7 @@ class KanbanTaskCard extends StatelessWidget {
   }
 
   void _showEditSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _EditTaskSheet(todo: todo, state: state),
-    );
+    openTaskEditorSheet(context, todo: todo, state: state);
   }
 
   Widget _buildContent(
@@ -237,6 +186,11 @@ class KanbanTaskCard extends StatelessWidget {
                 onPressed: () =>
                     state.moveTaskToStatus(todo.id, TaskStatus.done),
               ),
+            ActionChip(
+              avatar: const Icon(Icons.more_horiz_rounded, size: 16),
+              label: const Text('Delete'),
+              onPressed: () => state.deleteTodo(todo.id),
+            ),
           ],
         ),
       ],
@@ -271,169 +225,6 @@ class KanbanTaskCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EditTaskSheet extends StatefulWidget {
-  const _EditTaskSheet({required this.todo, required this.state});
-
-  final TodoItem todo;
-  final FlowForgeState state;
-
-  @override
-  State<_EditTaskSheet> createState() => _EditTaskSheetState();
-}
-
-class _EditTaskSheetState extends State<_EditTaskSheet> {
-  late TextEditingController _titleController;
-  late TaskEnergyRequirement _energyRequirement;
-  late int _estimateMinutes;
-  late TaskStatus _status;
-  DateTime? _deadline;
-  String? _projectId;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.todo.title);
-    _energyRequirement = widget.todo.energyRequirement;
-    _estimateMinutes = widget.todo.estimateMinutes;
-    _status = widget.todo.status;
-    _deadline = widget.todo.deadline;
-    _projectId = widget.todo.projectId;
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
-  }
-
-  void _save() {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) return;
-
-    widget.state.updateTodo(
-      id: widget.todo.id,
-      title: title,
-      energyRequirement: _energyRequirement,
-      estimateMinutes: _estimateMinutes,
-      status: _status,
-      deadline: _deadline,
-      projectId: _projectId,
-      clearDeadline: _deadline == null,
-      clearProjectId: _projectId == null,
-    );
-    Navigator.pop(context);
-  }
-
-  void _delete() {
-    widget.state.deleteTodo(widget.todo.id);
-    Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
-      decoration: BoxDecoration(
-        color: isDark ? scheme.surfaceContainerHigh : scheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: scheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    controller: _titleController,
-                    autofocus: true,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _save(),
-                    decoration: const InputDecoration(
-                      hintText: 'Task title...',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _save,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(48, 56),
-                  ),
-                  child: const Icon(Icons.check),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Edit task',
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Keep the title clear, then update where it belongs and when it is due.',
-              style: textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TaskDetailSections(
-              keyPrefix: 'task-edit',
-              status: _status,
-              onStatusChanged: (value) => setState(() => _status = value),
-              energyRequirement: _energyRequirement,
-              onEnergyChanged: (value) =>
-                  setState(() => _energyRequirement = value),
-              estimateMinutes: _estimateMinutes,
-              onEstimateChanged: (value) =>
-                  setState(() => _estimateMinutes = value),
-              deadline: _deadline,
-              onDeadlineChanged: (value) => setState(() => _deadline = value),
-              projectId: _projectId,
-              onProjectChanged: (value) => setState(() => _projectId = value),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _delete,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete Task'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: scheme.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

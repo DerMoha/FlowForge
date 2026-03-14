@@ -1,66 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/task_energy_requirement.dart';
 import '../models/task_status.dart';
 import '../models/todo_item.dart';
 import '../state/app_state.dart';
+import '../state/project_state.dart';
 import '../utils/date_helpers.dart';
+import 'task_editor_sheet.dart';
 
 class HeroTaskCard extends StatelessWidget {
-  const HeroTaskCard({super.key, required this.state});
+  const HeroTaskCard({super.key, required this.state, this.todo});
 
   final FlowForgeState state;
+  final TodoItem? todo;
 
   @override
   Widget build(BuildContext context) {
-    final todo = state.focusedTodo;
+    final heroTodo = todo ?? state.focusedTodo;
 
-    if (todo == null) {
+    if (heroTodo == null) {
       return _emptyState(context);
     }
 
-    return _buildDismissible(
-      context: context,
-      todo: todo,
-      child: _cardContent(context, todo),
-    );
-  }
-
-  Widget _buildDismissible({
-    required BuildContext context,
-    required TodoItem todo,
-    required Widget child,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Dismissible(
-      key: ValueKey<String>('hero-${todo.id}'),
-      direction: DismissDirection.startToEnd,
-      onDismissed: (_) => state.toggleTodo(todo.id, true),
-      background: Container(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 24),
-        decoration: BoxDecoration(
-          color: scheme.primary.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.check_circle_rounded, color: scheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              'Complete',
-              style: TextStyle(
-                color: scheme.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-      child: child,
-    );
+    return _cardContent(context, heroTodo);
   }
 
   Widget _cardContent(BuildContext context, TodoItem todo) {
@@ -173,6 +136,20 @@ class HeroTaskCard extends StatelessWidget {
                     ? scheme.primary
                     : scheme.tertiary,
               ),
+              Consumer<ProjectState>(
+                builder: (context, projectState, _) {
+                  final project = todo.projectId != null
+                      ? projectState.getProject(todo.projectId!)
+                      : null;
+                  if (project == null) return const SizedBox.shrink();
+                  return _tag(
+                    context,
+                    icon: project.icon,
+                    text: project.name,
+                    color: project.color,
+                  );
+                },
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -223,6 +200,12 @@ class HeroTaskCard extends StatelessWidget {
                 onPressed: () => state.toggleTodo(todo.id, true),
                 icon: const Icon(Icons.check_circle_outline_rounded),
                 label: const Text('Mark Done'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    openTaskEditorSheet(context, todo: todo, state: state),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Edit'),
               ),
               TextButton.icon(
                 onPressed: () => state.moveTaskToStatus(

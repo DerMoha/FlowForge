@@ -25,108 +25,45 @@ class KanbanColumn extends StatefulWidget {
 
 class _KanbanColumnState extends State<KanbanColumn> {
   bool _isExpanded = true;
-  bool _isDragOver = false;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final columnColor = _getColumnColor(scheme);
-    final backgroundColor = _isDragOver
-        ? columnColor.withValues(alpha: isDark ? 0.15 : 0.1)
-        : Colors.transparent;
-
-    return DragTarget<TodoItem>(
-      onWillAcceptWithDetails: (details) {
-        if (details.data.status == widget.status) return false;
-        setState(() => _isDragOver = true);
-        return true;
-      },
-      onLeave: (_) {
-        setState(() => _isDragOver = false);
-      },
-      onAcceptWithDetails: (details) {
-        setState(() => _isDragOver = false);
-        widget.state.moveTaskToStatus(details.data.id, widget.status);
-      },
-      builder: (context, candidateData, rejectedData) {
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            border: _isDragOver
-                ? Border.all(color: columnColor, width: 2)
-                : null,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _buildHeader(context, scheme, textTheme, columnColor),
-              if (_isExpanded) ...<Widget>[
-                if (widget.showWarning && widget.todos.length > 5)
-                  _buildWarning(context, scheme),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOutCubic,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: widget.todos
-                        .map(
-                          (todo) => _AnimatedTaskCard(
-                            key: ValueKey(todo.id),
-                            todo: todo,
-                            state: widget.state,
-                            swipeConfig: _getSwipeConfig(),
-                            scheme: scheme,
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-                if (widget.todos.isEmpty) _buildEmptyState(context, scheme),
-              ],
-            ],
-          ),
-        );
-      },
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _buildHeader(context, scheme, textTheme, columnColor),
+          if (_isExpanded) ...<Widget>[
+            if (widget.showWarning && widget.todos.length > 5)
+              _buildWarning(context, scheme),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: widget.todos
+                    .map(
+                      (todo) => _AnimatedTaskCard(
+                        key: ValueKey(todo.id),
+                        todo: todo,
+                        state: widget.state,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+            if (widget.todos.isEmpty) _buildEmptyState(context, scheme),
+          ],
+        ],
+      ),
     );
-  }
-
-  _SwipeConfig? _getSwipeConfig() {
-    switch (widget.status) {
-      case TaskStatus.today:
-        return _SwipeConfig(
-          direction: DismissDirection.horizontal,
-          targetStatus: TaskStatus.done,
-          backgroundColor: Colors.green,
-          icon: Icons.check_circle_outline,
-          label: 'Done',
-          secondaryTarget: TaskStatus.backlog,
-          secondaryBackgroundColor: Colors.orange,
-          secondaryIcon: Icons.inventory_2_outlined,
-          secondaryLabel: 'Backlog',
-        );
-      case TaskStatus.backlog:
-        return _SwipeConfig(
-          direction: DismissDirection.startToEnd,
-          targetStatus: TaskStatus.today,
-          backgroundColor: Colors.blue,
-          icon: Icons.today_outlined,
-          label: 'Today',
-        );
-      case TaskStatus.done:
-        return _SwipeConfig(
-          direction: DismissDirection.endToStart,
-          targetStatus: TaskStatus.backlog,
-          backgroundColor: Colors.orange,
-          icon: Icons.inventory_2_outlined,
-          label: 'Backlog',
-        );
-    }
   }
 
   Widget _buildHeader(
@@ -156,6 +93,17 @@ class _KanbanColumnState extends State<KanbanColumn> {
                 color: columnColor,
               ),
             ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Use the visible task actions to move work between columns.',
+                style: textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
@@ -176,7 +124,7 @@ class _KanbanColumnState extends State<KanbanColumn> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Consider focusing on fewer tasks today',
+              'Consider focusing on fewer tasks today and moving the rest back to backlog.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: scheme.tertiary),
@@ -239,7 +187,7 @@ class _KanbanColumnState extends State<KanbanColumn> {
   String _getEmptyMessage() {
     switch (widget.status) {
       case TaskStatus.today:
-        return 'Drag tasks here to plan your day';
+        return 'Use card actions to plan today intentionally';
       case TaskStatus.backlog:
         return 'Your backlog is empty';
       case TaskStatus.done:
@@ -248,43 +196,11 @@ class _KanbanColumnState extends State<KanbanColumn> {
   }
 }
 
-class _SwipeConfig {
-  const _SwipeConfig({
-    required this.direction,
-    required this.targetStatus,
-    required this.backgroundColor,
-    required this.icon,
-    required this.label,
-    this.secondaryTarget,
-    this.secondaryBackgroundColor,
-    this.secondaryIcon,
-    this.secondaryLabel,
-  });
-
-  final DismissDirection direction;
-  final TaskStatus targetStatus;
-  final Color backgroundColor;
-  final IconData icon;
-  final String label;
-  final TaskStatus? secondaryTarget;
-  final Color? secondaryBackgroundColor;
-  final IconData? secondaryIcon;
-  final String? secondaryLabel;
-}
-
 class _AnimatedTaskCard extends StatefulWidget {
-  const _AnimatedTaskCard({
-    super.key,
-    required this.todo,
-    required this.state,
-    required this.swipeConfig,
-    required this.scheme,
-  });
+  const _AnimatedTaskCard({super.key, required this.todo, required this.state});
 
   final TodoItem todo;
   final FlowForgeState state;
-  final _SwipeConfig? swipeConfig;
-  final ColorScheme scheme;
 
   @override
   State<_AnimatedTaskCard> createState() => _AnimatedTaskCardState();
@@ -322,63 +238,8 @@ class _AnimatedTaskCardState extends State<_AnimatedTaskCard>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final swipeConfig = widget.swipeConfig;
-
-    if (swipeConfig == null) {
-      return _buildAnimatedChild(
-        KanbanTaskCard(
-          todo: widget.todo,
-          state: widget.state,
-          onDelete: () => widget.state.deleteTodo(widget.todo.id),
-        ),
-      );
-    }
-
     return _buildAnimatedChild(
-      Dismissible(
-        key: Key(widget.todo.id),
-        direction: swipeConfig.direction,
-        background: _buildSwipeBackground(
-          context,
-          swipeConfig.backgroundColor,
-          swipeConfig.icon,
-          swipeConfig.label,
-          Alignment.centerLeft,
-          isDark,
-        ),
-        secondaryBackground: swipeConfig.secondaryTarget != null
-            ? _buildSwipeBackground(
-                context,
-                swipeConfig.secondaryBackgroundColor ??
-                    swipeConfig.backgroundColor,
-                swipeConfig.secondaryIcon ?? swipeConfig.icon,
-                swipeConfig.secondaryLabel ?? swipeConfig.label,
-                Alignment.centerRight,
-                isDark,
-              )
-            : null,
-        confirmDismiss: (direction) async {
-          if (direction == DismissDirection.startToEnd) {
-            widget.state.moveTaskToStatus(
-              widget.todo.id,
-              swipeConfig.targetStatus,
-            );
-          } else if (direction == DismissDirection.endToStart &&
-              swipeConfig.secondaryTarget != null) {
-            widget.state.moveTaskToStatus(
-              widget.todo.id,
-              swipeConfig.secondaryTarget!,
-            );
-          }
-          return false;
-        },
-        child: KanbanTaskCard(
-          todo: widget.todo,
-          state: widget.state,
-          onDelete: () => widget.state.deleteTodo(widget.todo.id),
-        ),
-      ),
+      KanbanTaskCard(todo: widget.todo, state: widget.state),
     );
   }
 
@@ -386,41 +247,6 @@ class _AnimatedTaskCardState extends State<_AnimatedTaskCard>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(position: _slideAnimation, child: child),
-    );
-  }
-
-  Widget _buildSwipeBackground(
-    BuildContext context,
-    Color backgroundColor,
-    IconData icon,
-    String label,
-    Alignment alignment,
-    bool isDark,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: backgroundColor.withValues(alpha: isDark ? 0.3 : 0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Align(
-        alignment: alignment,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, color: backgroundColor, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: backgroundColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

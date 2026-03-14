@@ -6,9 +6,18 @@ import '../utils/date_helpers.dart';
 import 'task_pill.dart';
 
 class TaskRiver extends StatefulWidget {
-  const TaskRiver({super.key, required this.state});
+  const TaskRiver({
+    super.key,
+    required this.state,
+    this.openTodos,
+    this.completedTodos,
+    this.heroTodoId,
+  });
 
   final FlowForgeState state;
+  final List<TodoItem>? openTodos;
+  final List<TodoItem>? completedTodos;
+  final String? heroTodoId;
 
   @override
   State<TaskRiver> createState() => _TaskRiverState();
@@ -22,11 +31,16 @@ class _TaskRiverState extends State<TaskRiver> {
 
   @override
   Widget build(BuildContext context) {
-    final openTodos = widget.state.sortedOpenTodos;
-    final riverTodos = openTodos.length > 1
-        ? openTodos.sublist(1)
-        : <TodoItem>[];
-    final completedTodos = widget.state.completedTodos;
+    final openTodos = widget.openTodos ?? widget.state.sortedOpenTodos;
+    final heroTodoId =
+        widget.heroTodoId ??
+        (widget.openTodos == null && openTodos.isNotEmpty
+            ? openTodos.first.id
+            : null);
+    final riverTodos = heroTodoId == null
+        ? openTodos
+        : openTodos.where((todo) => todo.id != heroTodoId).toList();
+    final completedTodos = widget.completedTodos ?? widget.state.completedTodos;
 
     if (riverTodos.isEmpty && completedTodos.isEmpty) {
       return const SizedBox.shrink();
