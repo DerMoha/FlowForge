@@ -50,105 +50,140 @@ class TaskDetailSections extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         if (status != null && onStatusChanged != null) ...<Widget>[
-          _SectionLabel(label: 'Status', scheme: scheme, textTheme: textTheme),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: TaskStatus.values.map((value) {
-              final color = _statusColor(value, scheme);
-              return ChoiceChip(
-                key: ValueKey<String>('$keyPrefix-status-${value.name}'),
-                selected: status == value,
-                onSelected: (_) => onStatusChanged!(value),
-                selectedColor: color.withValues(alpha: 0.18),
-                side: BorderSide(color: color.withValues(alpha: 0.35)),
-                label: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Icon(_statusIcon(value), size: 14, color: color),
-                    const SizedBox(width: 4),
-                    Text(value.label),
-                  ],
-                ),
-              );
-            }).toList(),
+          _SectionCard(
+            label: 'Where should this live?',
+            scheme: scheme,
+            textTheme: textTheme,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: TaskStatus.values.map((value) {
+                final color = _statusColor(value, scheme);
+                return ChoiceChip(
+                  key: ValueKey<String>('$keyPrefix-status-${value.name}'),
+                  selected: status == value,
+                  onSelected: (_) => onStatusChanged!(value),
+                  selectedColor: color.withValues(alpha: 0.18),
+                  side: BorderSide(color: color.withValues(alpha: 0.35)),
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(_statusIcon(value), size: 14, color: color),
+                      const SizedBox(width: 4),
+                      Text(value.label),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           ),
           const SizedBox(height: 12),
         ],
-        _SectionLabel(label: 'Energy', scheme: scheme, textTheme: textTheme),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: TaskEnergyRequirement.values.map((requirement) {
-            return ChoiceChip(
-              key: ValueKey<String>('$keyPrefix-energy-${requirement.name}'),
-              selected: energyRequirement == requirement,
-              onSelected: (_) => onEnergyChanged(requirement),
-              selectedColor: requirement.accent.withValues(alpha: 0.18),
-              side: BorderSide(
-                color: requirement.accent.withValues(alpha: 0.35),
-              ),
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(requirement.icon, size: 14, color: requirement.accent),
-                  const SizedBox(width: 4),
-                  Text(requirement.label),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        _SectionLabel(
-          label: 'Time Estimate',
+        _SectionCard(
+          label: 'Energy and time',
           scheme: scheme,
           textTheme: textTheme,
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: FlowForgeState.todoEstimatePresets.map((minutes) {
-            return ChoiceChip(
-              key: ValueKey<String>('$keyPrefix-effort-$minutes'),
-              selected: estimateMinutes == minutes,
-              onSelected: (_) => onEstimateChanged(minutes),
-              label: Text('$minutes min'),
-            );
-          }).toList(),
-        ),
-        if (suggestedMinutes != null &&
-            onUseSuggestedEstimate != null &&
-            estimateHelperText != null) ...<Widget>[
-          const SizedBox(height: 8),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: Text(
-                  estimateHelperText!,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
+              _SectionLabel(
+                label: 'Energy',
+                scheme: scheme,
+                textTheme: textTheme,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: TaskEnergyRequirement.values.map((requirement) {
+                  return ChoiceChip(
+                    key: ValueKey<String>(
+                      '$keyPrefix-energy-${requirement.name}',
+                    ),
+                    selected: energyRequirement == requirement,
+                    onSelected: (_) => onEnergyChanged(requirement),
+                    selectedColor: requirement.accent.withValues(alpha: 0.18),
+                    side: BorderSide(
+                      color: requirement.accent.withValues(alpha: 0.35),
+                    ),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(
+                          requirement.icon,
+                          size: 14,
+                          color: requirement.accent,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(requirement.label),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+              _SectionLabel(
+                label: 'Time estimate',
+                scheme: scheme,
+                textTheme: textTheme,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: FlowForgeState.todoEstimatePresets.map((minutes) {
+                  return ChoiceChip(
+                    key: ValueKey<String>('$keyPrefix-effort-$minutes'),
+                    selected: estimateMinutes == minutes,
+                    onSelected: (_) => onEstimateChanged(minutes),
+                    label: Text('$minutes min'),
+                  );
+                }).toList(),
+              ),
+              if (suggestedMinutes != null &&
+                  onUseSuggestedEstimate != null &&
+                  estimateHelperText != null) ...<Widget>[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHighest.withValues(
+                      alpha: 0.45,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          estimateHelperText!,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        key: ValueKey<String>('$keyPrefix-use-estimate'),
+                        onPressed: onUseSuggestedEstimate,
+                        child: Text('Use $suggestedMinutes min'),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              TextButton(
-                key: ValueKey<String>('$keyPrefix-use-estimate'),
-                onPressed: onUseSuggestedEstimate,
-                child: Text('Use $suggestedMinutes min'),
-              ),
+              ],
             ],
           ),
-        ],
+        ),
         const SizedBox(height: 12),
-        _SectionLabel(label: 'Due Date', scheme: scheme, textTheme: textTheme),
-        const SizedBox(height: 8),
-        _DueDateChips(
-          keyPrefix: keyPrefix,
-          deadline: deadline,
-          onChanged: onDeadlineChanged,
+        _SectionCard(
+          label: 'Timing',
+          scheme: scheme,
+          textTheme: textTheme,
+          child: _DueDateChips(
+            keyPrefix: keyPrefix,
+            deadline: deadline,
+            onChanged: onDeadlineChanged,
+          ),
         ),
         if (onProjectChanged != null) ...<Widget>[
           const SizedBox(height: 12),
@@ -159,56 +194,40 @@ class TaskDetailSections extends StatelessWidget {
                 return const SizedBox.shrink();
               }
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  _SectionLabel(
-                    label: 'Project',
-                    scheme: scheme,
-                    textTheme: textTheme,
+              return _SectionCard(
+                label: 'Project',
+                scheme: scheme,
+                textTheme: textTheme,
+                child: DropdownButtonFormField<String?>(
+                  key: ValueKey<String>('$keyPrefix-project-picker'),
+                  initialValue: projectId,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.folder_open_rounded),
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      ChoiceChip(
-                        key: ValueKey<String>('$keyPrefix-project-none'),
-                        selected: projectId == null,
-                        onSelected: (_) => onProjectChanged!(null),
-                        label: const Text('None'),
-                      ),
-                      ...projects.map((project) {
-                        return ChoiceChip(
-                          key: ValueKey<String>(
-                            '$keyPrefix-project-${project.id}',
-                          ),
-                          selected: projectId == project.id,
-                          onSelected: (_) => onProjectChanged!(project.id),
-                          selectedColor: project.color.withValues(alpha: 0.18),
-                          side: BorderSide(
-                            color: project.color.withValues(alpha: 0.35),
-                          ),
-                          label: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: project.color,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(project.name),
-                            ],
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ],
+                  items: <DropdownMenuItem<String?>>[
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('No project'),
+                    ),
+                    ...projects.map((project) {
+                      return DropdownMenuItem<String?>(
+                        key: ValueKey<String>(
+                          '$keyPrefix-project-${project.id}',
+                        ),
+                        value: project.id,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(project.icon, size: 18, color: project.color),
+                            const SizedBox(width: 8),
+                            Text(project.name),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                  onChanged: onProjectChanged,
+                ),
               );
             },
           ),
@@ -237,6 +256,43 @@ class TaskDetailSections extends StatelessWidget {
       case TaskStatus.done:
         return Icons.check_circle_outline_rounded;
     }
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.label,
+    required this.scheme,
+    required this.textTheme,
+    required this.child,
+  });
+
+  final String label;
+  final ColorScheme scheme;
+  final TextTheme textTheme;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _SectionLabel(label: label, scheme: scheme, textTheme: textTheme),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
   }
 }
 

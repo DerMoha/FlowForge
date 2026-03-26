@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../models/task_energy_requirement.dart';
 import '../models/task_status.dart';
 import '../models/todo_item.dart';
 import '../state/app_state.dart';
-import '../state/project_state.dart';
 import '../utils/date_helpers.dart';
 import 'task_editor_sheet.dart';
+import 'task_ui_helpers.dart';
 
 class HeroTaskCard extends StatelessWidget {
   const HeroTaskCard({super.key, required this.state, this.todo});
@@ -85,8 +84,7 @@ class HeroTaskCard extends StatelessWidget {
               ),
               const Spacer(),
               if (dueDateText.isNotEmpty)
-                _tag(
-                  context,
+                TaskMetaChip(
                   icon: isOverdue
                       ? Icons.warning_amber_rounded
                       : Icons.schedule,
@@ -114,20 +112,17 @@ class HeroTaskCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
-              _tag(
-                context,
+              TaskMetaChip(
                 icon: todo.energyRequirement.icon,
                 text: '${todo.energyRequirement.label} energy',
                 color: todo.energyRequirement.accent,
               ),
-              _tag(
-                context,
+              TaskMetaChip(
                 icon: Icons.timer_outlined,
                 text: '${todo.estimateMinutes} min',
                 color: scheme.secondary,
               ),
-              _tag(
-                context,
+              TaskMetaChip(
                 icon: todo.status == TaskStatus.today
                     ? Icons.today_rounded
                     : Icons.inventory_2_rounded,
@@ -136,20 +131,7 @@ class HeroTaskCard extends StatelessWidget {
                     ? scheme.primary
                     : scheme.tertiary,
               ),
-              Consumer<ProjectState>(
-                builder: (context, projectState, _) {
-                  final project = todo.projectId != null
-                      ? projectState.getProject(todo.projectId!)
-                      : null;
-                  if (project == null) return const SizedBox.shrink();
-                  return _tag(
-                    context,
-                    icon: project.icon,
-                    text: project.name,
-                    color: project.color,
-                  );
-                },
-              ),
+              TaskProjectBadge(todo: todo),
             ],
           ),
           const SizedBox(height: 14),
@@ -183,47 +165,45 @@ class HeroTaskCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          Row(
             children: <Widget>[
-              FilledButton.icon(
-                onPressed: state.toggleTimer,
-                icon: Icon(
-                  state.isRunning
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: state.toggleTimer,
+                  icon: Icon(
+                    state.isRunning
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
+                  ),
+                  label: Text(state.isRunning ? 'Pause Focus' : 'Start Focus'),
                 ),
-                label: Text(state.isRunning ? 'Pause Focus' : 'Start Focus'),
               ),
-              OutlinedButton.icon(
-                onPressed: () => state.toggleTodo(todo.id, true),
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: const Text('Mark Done'),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => state.toggleTodo(todo.id, true),
+                  icon: const Icon(Icons.check_circle_outline_rounded),
+                  label: const Text('Mark Done'),
+                ),
               ),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    openTaskEditorSheet(context, todo: todo, state: state),
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Edit'),
-              ),
-              TextButton.icon(
-                onPressed: () => state.moveTaskToStatus(
-                  todo.id,
-                  todo.status == TaskStatus.today
-                      ? TaskStatus.backlog
-                      : TaskStatus.today,
-                ),
-                icon: Icon(
-                  todo.status == TaskStatus.today
-                      ? Icons.inventory_2_rounded
-                      : Icons.today_rounded,
-                ),
-                label: Text(
-                  todo.status == TaskStatus.today
-                      ? 'Back to Backlog'
-                      : 'Move to Today',
-                ),
+              const SizedBox(width: 6),
+              PopupMenuButton<_HeroAction>(
+                tooltip: 'More actions',
+                onSelected: (action) => _handleAction(context, todo, action),
+                itemBuilder: (context) => <PopupMenuEntry<_HeroAction>>[
+                  const PopupMenuItem<_HeroAction>(
+                    value: _HeroAction.edit,
+                    child: Text('Edit task'),
+                  ),
+                  PopupMenuItem<_HeroAction>(
+                    value: _HeroAction.toggleStatus,
+                    child: Text(
+                      todo.status == TaskStatus.today
+                          ? 'Move to Backlog'
+                          : 'Move to Today',
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -268,35 +248,21 @@ class HeroTaskCard extends StatelessWidget {
     );
   }
 
-  Widget _tag(
-    BuildContext context, {
-    required IconData icon,
-    required String text,
-    required Color color,
-  }) {
-    final textTheme = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.24 : 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
+  void _handleAction(BuildContext context, TodoItem todo, _HeroAction action) {
+    switch (action) {
+      case _HeroAction.edit:
+        openTaskEditorSheet(context, todo: todo, state: state);
+        return;
+      case _HeroAction.toggleStatus:
+        state.moveTaskToStatus(
+          todo.id,
+          todo.status == TaskStatus.today
+              ? TaskStatus.backlog
+              : TaskStatus.today,
+        );
+        return;
+    }
   }
 }
+
+enum _HeroAction { edit, toggleStatus }

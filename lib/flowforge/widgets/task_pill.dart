@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../models/task_energy_requirement.dart';
 import '../models/task_status.dart';
 import '../models/todo_item.dart';
 import '../state/app_state.dart';
-import '../state/project_state.dart';
 import '../utils/date_helpers.dart';
 import 'task_editor_sheet.dart';
+import 'task_ui_helpers.dart';
 
 class TaskPill extends StatelessWidget {
   const TaskPill({
@@ -64,62 +63,38 @@ class TaskPill extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Consumer<ProjectState>(
-                              builder: (context, projectState, _) {
-                                final project = todo.projectId != null
-                                    ? projectState.getProject(todo.projectId!)
-                                    : null;
-                                if (project == null) {
-                                  return Icon(
-                                    todo.energyRequirement.icon,
-                                    size: 16,
-                                    color: todo.isDone
-                                        ? scheme.onSurfaceVariant
-                                        : todo.energyRequirement.accent,
-                                  );
-                                }
-
-                                return Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: project.color,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Icon(
-                                      todo.energyRequirement.icon,
-                                      size: 16,
-                                      color: todo.isDone
-                                          ? scheme.onSurfaceVariant
-                                          : todo.energyRequirement.accent,
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                todo.title,
-                                style: textTheme.bodyMedium?.copyWith(
-                                  decoration: todo.isDone
-                                      ? TextDecoration.lineThrough
-                                      : null,
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: <Widget>[
+                                TaskMetaChip(
+                                  icon: todo.energyRequirement.icon,
+                                  text: todo.energyRequirement.label,
                                   color: todo.isDone
                                       ? scheme.onSurfaceVariant
-                                      : null,
-                                  fontWeight: FontWeight.w600,
+                                      : todo.energyRequirement.accent,
+                                  compact: true,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                                TaskProjectBadge(todo: todo, compact: true),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              todo.title,
+                              style: textTheme.bodyMedium?.copyWith(
+                                decoration: todo.isDone
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: todo.isDone
+                                    ? scheme.onSurfaceVariant
+                                    : null,
+                                fontWeight: FontWeight.w700,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -128,15 +103,14 @@ class TaskPill extends StatelessWidget {
                           spacing: 8,
                           runSpacing: 6,
                           children: <Widget>[
-                            _infoChip(
-                              context,
+                            TaskMetaChip(
                               icon: Icons.timer_outlined,
                               text: '${todo.estimateMinutes}m',
                               color: scheme.secondary,
+                              compact: true,
                             ),
                             if (dueDateText.isNotEmpty)
-                              _infoChip(
-                                context,
+                              TaskMetaChip(
                                 icon: isOverdue
                                     ? Icons.warning_amber_rounded
                                     : Icons.schedule,
@@ -144,13 +118,14 @@ class TaskPill extends StatelessWidget {
                                 color: isOverdue
                                     ? scheme.error
                                     : scheme.onSurfaceVariant,
+                                compact: true,
                               ),
                             if (isFocused)
-                              _infoChip(
-                                context,
+                              TaskMetaChip(
                                 icon: Icons.center_focus_strong_rounded,
                                 text: 'Focused',
                                 color: scheme.primary,
+                                compact: true,
                               ),
                           ],
                         ),
@@ -230,40 +205,33 @@ class TaskPill extends StatelessWidget {
       case _TaskPillAction.restore:
         return state.moveTaskToStatus(todo.id, TaskStatus.backlog);
       case _TaskPillAction.delete:
-        return state.deleteTodo(todo.id);
+        _confirmDelete(context);
+        return;
     }
   }
 
-  Widget _infoChip(
-    BuildContext context, {
-    required IconData icon,
-    required String text,
-    required Color color,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.2 : 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete task?'),
+        content: Text('"${todo.title}" will be removed permanently.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      state.deleteTodo(todo.id);
+    }
   }
 }
 
