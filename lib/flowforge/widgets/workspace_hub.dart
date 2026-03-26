@@ -11,7 +11,6 @@ import 'analytics_dashboard.dart';
 Future<void> openWorkspaceHub(BuildContext context, FlowForgeState state) {
   return Navigator.of(context).push<void>(
     MaterialPageRoute<void>(
-      fullscreenDialog: true,
       builder: (context) => WorkspaceHubPage(state: state),
     ),
   );
@@ -26,98 +25,83 @@ class WorkspaceHubPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final canPop = Navigator.of(context).canPop();
 
-    return DefaultTabController(
-      length: 2,
-      child: AmbientGradientBackground(
-        energy: state.energy,
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1120),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Column(
+    return AmbientGradientBackground(
+      energy: state.energy,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1220),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
-                        child: Row(
-                          children: <Widget>[
-                            IconButton.filledTonal(
-                              onPressed: () => Navigator.of(context).pop(),
-                              icon: const Icon(Icons.arrow_back_rounded),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    'Workspace',
-                                    style: textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Projects and analytics live here so Focus and Tasks stay simple.',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: scheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                      if (canPop) ...<Widget>[
+                        IconButton.filledTonal(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                        child: _WorkspaceSummary(state: state),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: scheme.surfaceContainerHigh.withValues(
-                              alpha: 0.76,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: scheme.outlineVariant.withValues(
-                                alpha: 0.4,
-                              ),
-                            ),
-                          ),
-                          child: TabBar(
-                            dividerColor: Colors.transparent,
-                            padding: const EdgeInsets.all(6),
-                            indicator: BoxDecoration(
-                              color: scheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            labelColor: scheme.onPrimaryContainer,
-                            unselectedLabelColor: scheme.onSurfaceVariant,
-                            tabs: const <Widget>[
-                              Tab(text: 'Projects'),
-                              Tab(text: 'Analytics'),
-                            ],
-                          ),
-                        ),
-                      ),
+                        const SizedBox(width: 12),
+                      ],
                       Expanded(
-                        child: TabBarView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            _ProjectsPanel(state: state),
-                            const _AnalyticsPanel(),
+                            Text(
+                              'Workspace',
+                              style: textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Projects and insights live together here so planning, review, and next moves stay in one calm place.',
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  _WorkspaceSummary(state: state),
+                  const SizedBox(height: 16),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth >= 980;
+
+                      if (isWide) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              flex: 5,
+                              child: _ProjectsPanel(state: state),
+                            ),
+                            const SizedBox(width: 16),
+                            const Expanded(flex: 6, child: _AnalyticsPanel()),
+                          ],
+                        );
+                      }
+
+                      return Column(
+                        children: <Widget>[
+                          _ProjectsPanel(state: state),
+                          const SizedBox(height: 16),
+                          const _AnalyticsPanel(),
+                        ],
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -136,79 +120,100 @@ class _WorkspaceSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Consumer2<ProjectState, AnalyticsState>(
       builder: (context, projectState, analyticsState, child) {
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerLow.withValues(
-              alpha: isDark ? 0.78 : 0.9,
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.42),
-            ),
-          ),
+        final activeProject = projectState.activeProject;
+
+        return _WorkspaceCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                'Secondary surfaces, one obvious home',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                projectState.activeProject == null
-                    ? 'Use Projects to give tasks context and Analytics to review patterns without crowding the main workflow.'
-                    : 'Project scope is active now, so Focus and Tasks are filtered to ${projectState.activeProject!.name}.',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              if (projectState.activeProject != null) ...<Widget>[
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: OutlinedButton.icon(
-                    key: const ValueKey<String>('workspace-summary-show-all'),
-                    onPressed: () => projectState.setActiveProject(null),
-                    icon: const Icon(Icons.filter_alt_off_rounded),
-                    label: const Text('Show all tasks'),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 16,
+                runSpacing: 16,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
-                  _SummaryPill(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 620),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          activeProject == null
+                              ? 'Everything is visible right now.'
+                              : '${activeProject.name} is the active lane.',
+                          style: textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          activeProject == null
+                              ? 'Use projects when you want a cleaner working context, then use analytics to decide where momentum should go next.'
+                              : 'Focus and Tasks are filtered to ${activeProject.name}. Clear the filter anytime, or use analytics to decide the best time to push this project forward.',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: <Widget>[
+                      FilledButton.icon(
+                        onPressed: () => _showProjectEditor(context),
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('Add project'),
+                      ),
+                      if (activeProject != null)
+                        OutlinedButton.icon(
+                          key: const ValueKey<String>(
+                            'workspace-summary-show-all',
+                          ),
+                          onPressed: () => projectState.setActiveProject(null),
+                          icon: const Icon(Icons.filter_alt_off_rounded),
+                          label: const Text('Show all tasks'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _ResponsiveStatGrid(
+                children: <Widget>[
+                  _SummaryTile(
                     icon: Icons.folder_copy_rounded,
                     label: 'Projects',
                     value: '${projectState.projects.length}',
+                    detail: activeProject == null
+                        ? 'No project filter'
+                        : '1 active filter',
                     color: scheme.primary,
                   ),
-                  _SummaryPill(
+                  _SummaryTile(
                     icon: Icons.task_alt_rounded,
-                    label: 'Open Tasks',
+                    label: 'Open tasks',
                     value: '${state.openTodoCount}',
+                    detail: '${state.completedTodoCount} completed',
                     color: scheme.secondary,
                   ),
-                  _SummaryPill(
+                  _SummaryTile(
                     icon: Icons.bolt_rounded,
                     label: 'Sessions',
                     value: '${analyticsState.totalSessions}',
+                    detail: '${analyticsState.totalMinutes} minutes logged',
                     color: scheme.tertiary,
                   ),
-                  _SummaryPill(
+                  _SummaryTile(
                     icon: Icons.local_fire_department_rounded,
                     label: 'Streak',
                     value: '${analyticsState.currentStreak}',
+                    detail: analyticsState.currentStreak == 0
+                        ? 'Start one today'
+                        : 'Keep it alive today',
                     color: scheme.error,
                   ),
                 ],
@@ -217,60 +222,6 @@ class _WorkspaceSummary extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _SummaryPill extends StatelessWidget {
-  const _SummaryPill({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                label,
-                style: textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                value,
-                style: textTheme.titleSmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
@@ -290,116 +241,138 @@ class _ProjectsPanel extends StatelessWidget {
         final activeProject = projectState.activeProject;
         final projects = projectState.projects;
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Projects',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
+        return _WorkspaceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Projects',
+                          style: textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Keep ownership visible on tasks without promoting projects to a main navigation tab.',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
+                        const SizedBox(height: 4),
+                        Text(
+                          'Pick an active lane, adjust project details, or keep everything visible.',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.tonalIcon(
+                    onPressed: () => _showProjectEditor(context),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Add'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (activeProject != null)
+                _ActiveProjectCard(
+                  project: activeProject,
+                  state: state,
+                  onClear: () => projectState.setActiveProject(null),
+                )
+              else
+                _AllProjectsCard(state: state),
+              const SizedBox(height: 16),
+              ...projects.map(
+                (project) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _ProjectCard(
+                    project: project,
+                    state: state,
+                    isActive: project.id == projectState.activeProjectId,
+                    onSetActive: () =>
+                        projectState.setActiveProject(project.id),
+                    onEdit: () => _showProjectEditor(context, project: project),
+                    onDelete: projects.length > 1
+                        ? () => _confirmDelete(context, project)
+                        : null,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: <Widget>[
-                    if (activeProject != null)
-                      OutlinedButton.icon(
-                        onPressed: () => projectState.setActiveProject(null),
-                        icon: const Icon(Icons.filter_alt_off_rounded),
-                        label: const Text('Show All'),
-                      ),
-                    FilledButton.icon(
-                      onPressed: () => _showProjectEditor(context),
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('Add'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (activeProject != null)
-              _ActiveProjectCard(
-                project: activeProject,
-                state: state,
-                onClear: () => projectState.setActiveProject(null),
-              )
-            else
-              _AllProjectsCard(state: state),
-            const SizedBox(height: 16),
-            ...projects.map(
-              (project) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ProjectCard(
-                  project: project,
-                  state: state,
-                  isActive: project.id == projectState.activeProjectId,
-                  onSetActive: () => projectState.setActiveProject(project.id),
-                  onEdit: () => _showProjectEditor(context, project: project),
-                  onDelete: projects.length > 1
-                      ? () => _confirmDelete(context, project)
-                      : null,
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
+}
 
-  Future<void> _showProjectEditor(BuildContext context, {Project? project}) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ProjectEditorSheet(project: project),
-    );
-  }
+class _AnalyticsPanel extends StatelessWidget {
+  const _AnalyticsPanel();
 
-  Future<void> _confirmDelete(BuildContext context, Project project) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete project?'),
-        content: Text(
-          'Tasks will keep their titles, but ${project.name} will be removed.',
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return _WorkspaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Insights',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+          const SizedBox(height: 4),
+          Text(
+            'Review progress, patterns, predictions, and the next useful move without switching views.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
+          const SizedBox(height: 16),
+          const AnalyticsDashboard(compact: true),
         ],
       ),
     );
+  }
+}
 
-    if (shouldDelete == true && context.mounted) {
-      await context.read<ProjectState>().deleteProject(project.id);
-    }
+Future<void> _showProjectEditor(BuildContext context, {Project? project}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => _ProjectEditorSheet(project: project),
+  );
+}
+
+Future<void> _confirmDelete(BuildContext context, Project project) async {
+  final shouldDelete = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Delete project?'),
+      content: Text(
+        'Tasks will keep their titles, but ${project.name} will be removed.',
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+
+  if (shouldDelete == true && context.mounted) {
+    await context.read<ProjectState>().deleteProject(project.id);
   }
 }
 
@@ -425,28 +398,15 @@ class _ActiveProjectCard extends StatelessWidget {
         .where((todo) => todo.projectId == project.id)
         .length;
 
-    return Container(
+    return _WorkspaceInsetCard(
       key: const ValueKey<String>('workspace-active-project-card'),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: project.color.withValues(alpha: 0.35)),
-      ),
+      borderColor: project.color.withValues(alpha: 0.34),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: project.color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(project.icon, color: project.color),
-              ),
+              _ProjectAvatar(project: project),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -479,20 +439,20 @@ class _ActiveProjectCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          _ResponsiveStatGrid(
             children: <Widget>[
-              _SummaryPill(
+              _SummaryTile(
                 icon: Icons.inventory_2_rounded,
                 label: 'Open',
                 value: '$openCount',
+                detail: 'Still in motion',
                 color: scheme.primary,
               ),
-              _SummaryPill(
+              _SummaryTile(
                 icon: Icons.check_circle_rounded,
                 label: 'Done',
                 value: '$doneCount',
+                detail: 'Completed so far',
                 color: scheme.secondary,
               ),
             ],
@@ -520,16 +480,8 @@ class _AllProjectsCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
+    return _WorkspaceInsetCard(
       key: const ValueKey<String>('workspace-all-projects-card'),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -539,26 +491,26 @@ class _AllProjectsCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Choose an active project only when you want Focus and Tasks to narrow down to one stream of work.',
+            'Set an active project when you want Focus and Tasks to narrow down to one stream of work.',
             style: textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          _ResponsiveStatGrid(
             children: <Widget>[
-              _SummaryPill(
+              _SummaryTile(
                 icon: Icons.inventory_2_rounded,
                 label: 'Open',
                 value: '${state.openTodoCount}',
+                detail: 'Ready to work',
                 color: scheme.primary,
               ),
-              _SummaryPill(
+              _SummaryTile(
                 icon: Icons.check_circle_rounded,
                 label: 'Done',
                 value: '${state.completedTodoCount}',
+                detail: 'Already finished',
                 color: scheme.secondary,
               ),
             ],
@@ -597,52 +549,37 @@ class _ProjectCard extends StatelessWidget {
         .where((todo) => todo.projectId == project.id && todo.deadline != null)
         .length;
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isActive
-              ? project.color.withValues(alpha: 0.45)
-              : scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
-      ),
+    return _WorkspaceInsetCard(
+      borderColor: isActive
+          ? project.color.withValues(alpha: 0.42)
+          : scheme.outlineVariant.withValues(alpha: 0.3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: project.color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(project.icon, color: project.color),
-              ),
+              _ProjectAvatar(project: project),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            project.name,
-                            style: textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                        Text(
+                          project.name,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        if (isActive) ...<Widget>[
-                          const SizedBox(width: 8),
+                        if (isActive)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
+                              horizontal: 10,
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
@@ -657,14 +594,13 @@ class _ProjectCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ],
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       (project.description ?? '').isNotEmpty
                           ? project.description!
-                          : 'No description yet. Use this to group related work.',
+                          : 'No description yet. Use this space to define what belongs here.',
                       style: textTheme.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -679,8 +615,14 @@ class _ProjectCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
-              _metaChip(context, Icons.inventory_2_rounded, '$openCount open'),
-              _metaChip(context, Icons.schedule_rounded, '$dueSoonCount dated'),
+              _MetaChip(
+                icon: Icons.inventory_2_rounded,
+                text: '$openCount open',
+              ),
+              _MetaChip(
+                icon: Icons.schedule_rounded,
+                text: '$dueSoonCount dated',
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -693,7 +635,7 @@ class _ProjectCard extends StatelessWidget {
                   key: ValueKey<String>('set-active-project-${project.id}'),
                   onPressed: onSetActive,
                   icon: const Icon(Icons.push_pin_outlined),
-                  label: const Text('Set Active'),
+                  label: const Text('Set active'),
                 ),
               OutlinedButton.icon(
                 onPressed: onEdit,
@@ -712,14 +654,41 @@ class _ProjectCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _metaChip(BuildContext context, IconData icon, String text) {
+class _ProjectAvatar extends StatelessWidget {
+  const _ProjectAvatar({required this.project});
+
+  final Project project;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: project.color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(project.icon, color: project.color),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh.withValues(alpha: 0.76),
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -734,46 +703,136 @@ class _ProjectCard extends StatelessWidget {
   }
 }
 
-class _AnalyticsPanel extends StatelessWidget {
-  const _AnalyticsPanel();
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String detail;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return _WorkspaceInsetCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: textTheme.labelLarge),
+          const SizedBox(height: 4),
+          Text(detail, style: textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResponsiveStatGrid extends StatelessWidget {
+  const _ResponsiveStatGrid({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final count = (width / 180).floor().clamp(1, 4);
+        final spacing = 12.0;
+        final tileWidth = count == 1
+            ? width
+            : (width - ((count - 1) * spacing)) / count;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: children
+              .map((child) => SizedBox(width: tileWidth, child: child))
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _WorkspaceCard extends StatelessWidget {
+  const _WorkspaceCard({required this.child});
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Analytics',
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Review momentum and patterns here instead of scattering insights across the main task flow.',
-            style: textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerLow.withValues(alpha: 0.84),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: scheme.outlineVariant.withValues(alpha: 0.35),
-                ),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: const AnalyticsDashboard(),
-            ),
-          ),
-        ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow.withValues(
+          alpha: isDark ? 0.8 : 0.92,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.34),
+        ),
       ),
+      child: child,
+    );
+  }
+}
+
+class _WorkspaceInsetCard extends StatelessWidget {
+  const _WorkspaceInsetCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(18),
+    this.borderColor,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: borderColor ?? scheme.outlineVariant.withValues(alpha: 0.32),
+        ),
+      ),
+      child: child,
     );
   }
 }
@@ -880,7 +939,7 @@ class _ProjectEditorSheetState extends State<_ProjectEditorSheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Projects stay secondary, but they should still be easy to maintain.',
+              'Projects stay lightweight, but they should still be easy to maintain.',
               style: textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
