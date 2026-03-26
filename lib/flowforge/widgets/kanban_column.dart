@@ -12,12 +12,14 @@ class KanbanColumn extends StatefulWidget {
     required this.todos,
     required this.state,
     this.showWarning = false,
+    this.boardMode = false,
   });
 
   final TaskStatus status;
   final List<TodoItem> todos;
   final FlowForgeState state;
   final bool showWarning;
+  final bool boardMode;
 
   @override
   State<KanbanColumn> createState() => _KanbanColumnState();
@@ -35,7 +37,16 @@ class _KanbanColumnState extends State<KanbanColumn> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+      padding: EdgeInsets.all(widget.boardMode ? 14 : 0),
+      decoration: BoxDecoration(
+        color: widget.boardMode
+            ? scheme.surfaceContainerLow.withValues(alpha: 0.72)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        border: widget.boardMode
+            ? Border.all(color: scheme.outlineVariant.withValues(alpha: 0.35))
+            : null,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -43,23 +54,14 @@ class _KanbanColumnState extends State<KanbanColumn> {
           if (_isExpanded) ...<Widget>[
             if (widget.showWarning && widget.todos.length > 5)
               _buildWarning(context, scheme),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: widget.todos
-                    .map(
-                      (todo) => _AnimatedTaskCard(
-                        key: ValueKey(todo.id),
-                        todo: todo,
-                        state: widget.state,
-                      ),
-                    )
-                    .toList(),
+            if (widget.boardMode)
+              Expanded(child: _buildTaskRegion(context, scheme))
+            else
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                child: _buildTaskRegion(context, scheme),
               ),
-            ),
-            if (widget.todos.isEmpty) _buildEmptyState(context, scheme),
           ],
         ],
       ),
@@ -72,41 +74,89 @@ class _KanbanColumnState extends State<KanbanColumn> {
     TextTheme textTheme,
     Color columnColor,
   ) {
+    final helperText = widget.status == TaskStatus.today
+        ? 'Keep this list intentionally small.'
+        : widget.status == TaskStatus.backlog
+        ? 'Park worthwhile tasks here until they earn today.'
+        : 'Finished work stays visible without stealing attention.';
+
     return GestureDetector(
       onTap: () => setState(() => _isExpanded = !_isExpanded),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
+      child: Container(
+        padding: EdgeInsets.fromLTRB(14, 14, 14, widget.boardMode ? 14 : 12),
+        decoration: BoxDecoration(
+          color: columnColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Icon(
-              _isExpanded ? Icons.expand_less : Icons.expand_more,
-              size: 24,
-              color: columnColor,
-            ),
-            const SizedBox(width: 8),
-            Icon(_getColumnIcon(), size: 20, color: columnColor),
-            const SizedBox(width: 8),
-            Text(
-              '${widget.status.label} (${widget.todos.length})',
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: columnColor,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Use the visible task actions to move work between columns.',
-                style: textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
+            Row(
+              children: <Widget>[
+                Icon(_getColumnIcon(), size: 20, color: columnColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${widget.status.label} (${widget.todos.length})',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: columnColor,
+                    ),
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 12),
+                Icon(
+                  _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 22,
+                  color: columnColor,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              helperText,
+              style: textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTaskRegion(BuildContext context, ColorScheme scheme) {
+    if (widget.todos.isEmpty) {
+      return _buildEmptyState(context, scheme);
+    }
+
+    return _buildTaskList(context);
+  }
+
+  Widget _buildTaskList(BuildContext context) {
+    final children = widget.todos
+        .map(
+          (todo) => _AnimatedTaskCard(
+            key: ValueKey(todo.id),
+            todo: todo,
+            state: widget.state,
+          ),
+        )
+        .toList();
+
+    if (widget.boardMode) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: ListView(
+          padding: const EdgeInsets.only(top: 10, bottom: 4),
+          children: children,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
     );
   }
 
@@ -139,13 +189,13 @@ class _KanbanColumnState extends State<KanbanColumn> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: 10, bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest.withValues(
           alpha: isDark ? 0.3 : 0.5,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: scheme.outlineVariant.withValues(alpha: 0.3),
           style: BorderStyle.solid,
@@ -156,7 +206,8 @@ class _KanbanColumnState extends State<KanbanColumn> {
           _getEmptyMessage(),
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -187,11 +238,11 @@ class _KanbanColumnState extends State<KanbanColumn> {
   String _getEmptyMessage() {
     switch (widget.status) {
       case TaskStatus.today:
-        return 'Use card actions to plan today intentionally';
+        return 'Nothing is committed for today yet.';
       case TaskStatus.backlog:
-        return 'Your backlog is empty';
+        return 'Your backlog is empty.';
       case TaskStatus.done:
-        return 'No completed tasks yet';
+        return 'No completed tasks yet.';
     }
   }
 }

@@ -6,13 +6,21 @@ import '../models/todo_item.dart';
 import '../models/task_status.dart';
 import '../state/app_state.dart';
 import '../state/project_state.dart';
+import '../utils/date_helpers.dart';
+import 'ambient_gradient_background.dart';
 import 'kanban_column.dart';
 import 'task_detail_sections.dart';
+import 'task_ui_helpers.dart';
 
 class TaskKanbanScreen extends StatefulWidget {
-  const TaskKanbanScreen({super.key, required this.state});
+  const TaskKanbanScreen({
+    super.key,
+    required this.state,
+    required this.onToggleTheme,
+  });
 
   final FlowForgeState state;
+  final VoidCallback onToggleTheme;
 
   @override
   State<TaskKanbanScreen> createState() => _TaskKanbanScreenState();
@@ -87,58 +95,67 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
       activeProject?.id,
     );
     final doneTodos = _filterTodos(widget.state.doneTodos, activeProject?.id);
+    return AmbientGradientBackground(
+      energy: widget.state.energy,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1080),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isBoardLayout = constraints.maxWidth >= 900;
+                  final horizontalPadding = isBoardLayout ? 24.0 : 20.0;
+                  final bottomPadding = isBoardLayout ? 36.0 : 136.0;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddTaskSheet,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Task'),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1080),
-            child: SizedBox(
-              width: double.infinity,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _buildHeader(context, scheme, textTheme),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Choose what deserves today and keep the rest organized.',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
+                  return SizedBox(
+                    width: double.infinity,
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        16,
+                        horizontalPadding,
+                        bottomPadding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          _buildPageHeader(
+                            context,
+                            scheme,
+                            textTheme,
+                            isBoardLayout: isBoardLayout,
+                            todayCount: todayTodos.length,
+                            backlogCount: backlogTodos.length,
+                            doneCount: doneTodos.length,
+                          ),
+                          if (activeProject != null) ...<Widget>[
+                            const SizedBox(height: 16),
+                            _projectScopeBanner(context, projectState),
+                          ],
+                          const SizedBox(height: 18),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 220),
+                            child: isBoardLayout
+                                ? _buildBoardLayout(
+                                    context,
+                                    todayTodos,
+                                    backlogTodos,
+                                    doneTodos,
+                                  )
+                                : _buildGroupedLayout(
+                                    context,
+                                    todayTodos,
+                                    backlogTodos,
+                                    doneTodos,
+                                  ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    if (activeProject != null) ...<Widget>[
-                      _projectScopeBanner(context, projectState),
-                      const SizedBox(height: 16),
-                    ],
-                    KanbanColumn(
-                      status: TaskStatus.today,
-                      todos: todayTodos,
-                      state: widget.state,
-                      showWarning: true,
-                    ),
-                    const SizedBox(height: 12),
-                    KanbanColumn(
-                      status: TaskStatus.backlog,
-                      todos: backlogTodos,
-                      state: widget.state,
-                    ),
-                    const SizedBox(height: 12),
-                    KanbanColumn(
-                      status: TaskStatus.done,
-                      todos: doneTodos,
-                      state: widget.state,
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),
@@ -148,172 +165,267 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
   }
 
   Widget _buildAddTaskSheet(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
-      decoration: BoxDecoration(
-        color: isDark ? scheme.surfaceContainerHigh : scheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: scheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              'Add a task',
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Create it once, then decide later if it belongs in Today.',
-              style: textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    controller: _taskController,
-                    autofocus: true,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _addTask(),
-                    decoration: const InputDecoration(
-                      hintText: 'Task title...',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _addTask,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(56, 56),
-                  ),
-                  child: const Icon(Icons.add),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TaskDetailSections(
-              keyPrefix: 'kanban-add',
-              energyRequirement: _energyRequirement,
-              onEnergyChanged: (value) =>
-                  setState(() => _energyRequirement = value),
-              estimateMinutes: _estimateMinutes,
-              onEstimateChanged: (value) =>
-                  setState(() => _estimateMinutes = value),
-              deadline: _deadline,
-              onDeadlineChanged: (value) => setState(() => _deadline = value),
-              projectId: _projectId,
-              onProjectChanged: (value) => setState(() => _projectId = value),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(
-    BuildContext context,
-    ColorScheme scheme,
-    TextTheme textTheme,
-  ) {
-    return Row(
-      children: <Widget>[
-        Icon(Icons.view_kanban_rounded, size: 24, color: scheme.primary),
-        const SizedBox(width: 8),
-        Text(
-          'Task Board',
-          style: textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: scheme.onSurface,
-          ),
-        ),
-        const Spacer(),
-        _buildStats(context, scheme, textTheme),
-      ],
-    );
-  }
-
-  Widget _buildStats(
-    BuildContext context,
-    ColorScheme scheme,
-    TextTheme textTheme,
-  ) {
-    final activeProjectId = context.watch<ProjectState>().activeProjectId;
-    final todayCount = _filterTodos(
-      widget.state.todayTodos,
-      activeProjectId,
-    ).length;
-    final doneCount = _filterTodos(
-      widget.state.doneTodos,
-      activeProjectId,
-    ).length;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh.withValues(alpha: 0.74),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+    return TaskSheetFrame(
+      title: 'Add a task',
+      subtitle:
+          'Capture it calmly now, then decide later whether it belongs in Today or Backlog.',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _buildStatItem(
-            context,
-            icon: Icons.today_rounded,
-            count: todayCount,
-            color: scheme.primary,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: TaskTitleField(
+                  controller: _taskController,
+                  autofocus: true,
+                  onSubmitted: (_) => _addTask(),
+                ),
+              ),
+              const SizedBox(width: 10),
+              FilledButton(
+                onPressed: _addTask,
+                style: FilledButton.styleFrom(minimumSize: const Size(56, 56)),
+                child: const Icon(Icons.add_rounded),
+              ),
+            ],
           ),
-          _buildStatItem(
-            context,
-            icon: Icons.check_circle_rounded,
-            count: doneCount,
-            color: scheme.secondary,
+          const SizedBox(height: 16),
+          TaskDetailSections(
+            keyPrefix: 'kanban-add',
+            energyRequirement: _energyRequirement,
+            onEnergyChanged: (value) =>
+                setState(() => _energyRequirement = value),
+            estimateMinutes: _estimateMinutes,
+            onEstimateChanged: (value) =>
+                setState(() => _estimateMinutes = value),
+            deadline: _deadline,
+            onDeadlineChanged: (value) => setState(() => _deadline = value),
+            projectId: _projectId,
+            onProjectChanged: (value) => setState(() => _projectId = value),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(
+  Widget _buildGroupedLayout(
+    BuildContext context,
+    List<TodoItem> todayTodos,
+    List<TodoItem> backlogTodos,
+    List<TodoItem> doneTodos,
+  ) {
+    return Column(
+      key: const ValueKey<String>('tasks-grouped-layout'),
+      children: <Widget>[
+        KanbanColumn(
+          status: TaskStatus.today,
+          todos: todayTodos,
+          state: widget.state,
+          showWarning: true,
+        ),
+        const SizedBox(height: 12),
+        KanbanColumn(
+          status: TaskStatus.backlog,
+          todos: backlogTodos,
+          state: widget.state,
+        ),
+        const SizedBox(height: 12),
+        KanbanColumn(
+          status: TaskStatus.done,
+          todos: doneTodos,
+          state: widget.state,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBoardLayout(
+    BuildContext context,
+    List<TodoItem> todayTodos,
+    List<TodoItem> backlogTodos,
+    List<TodoItem> doneTodos,
+  ) {
+    final boardHeight = (MediaQuery.sizeOf(context).height - 260).clamp(
+      420.0,
+      760.0,
+    );
+
+    return SizedBox(
+      key: const ValueKey<String>('tasks-board-layout'),
+      height: boardHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(
+            child: KanbanColumn(
+              status: TaskStatus.today,
+              todos: todayTodos,
+              state: widget.state,
+              showWarning: true,
+              boardMode: true,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: KanbanColumn(
+              status: TaskStatus.backlog,
+              todos: backlogTodos,
+              state: widget.state,
+              boardMode: true,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: KanbanColumn(
+              status: TaskStatus.done,
+              todos: doneTodos,
+              state: widget.state,
+              boardMode: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageHeader(
+    BuildContext context,
+    ColorScheme scheme,
+    TextTheme textTheme, {
+    required bool isBoardLayout,
+    required int todayCount,
+    required int backlogCount,
+    required int doneCount,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isBoardLayout ? 24 : 20),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.68),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 720;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          final titleBlock = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Tasks',
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: scheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Plan today intentionally. Keep the active list lean and let backlog hold the rest.',
+                style: textTheme.bodyLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: <Widget>[
+                  _buildHeaderPill(
+                    context,
+                    icon: Icons.calendar_today_rounded,
+                    label: formatCompactDate(DateTime.now()),
+                    color: scheme.primary,
+                  ),
+                  _buildHeaderPill(
+                    context,
+                    icon: Icons.today_rounded,
+                    label: '$todayCount today',
+                    color: scheme.primary,
+                  ),
+                  _buildHeaderPill(
+                    context,
+                    icon: Icons.inventory_2_rounded,
+                    label: '$backlogCount backlog',
+                    color: scheme.tertiary,
+                  ),
+                  _buildHeaderPill(
+                    context,
+                    icon: Icons.check_circle_rounded,
+                    label: '$doneCount done',
+                    color: scheme.secondary,
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          final actionBlock = Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.end,
+            children: <Widget>[
+              IconButton.filledTonal(
+                tooltip: isDark
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode',
+                onPressed: widget.onToggleTheme,
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: _showAddTaskSheet,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(stacked ? 'Add task' : 'Capture task'),
+              ),
+            ],
+          );
+
+          return Flex(
+            direction: stacked ? Axis.vertical : Axis.horizontal,
+            crossAxisAlignment: stacked
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            children: <Widget>[
+              if (stacked) titleBlock else Expanded(child: titleBlock),
+              if (stacked)
+                const SizedBox(height: 16)
+              else
+                const SizedBox(width: 16),
+              actionBlock,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeaderPill(
     BuildContext context, {
     required IconData icon,
-    required int count,
+    required String label,
     required Color color,
   }) {
-    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -321,20 +433,11 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
           Text(
-            '$count',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w800,
+            label,
+            style: textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
               color: color,
             ),
-          ),
-          const SizedBox(width: 6),
-          Container(width: 1, height: 14, color: color.withValues(alpha: 0.24)),
-          const SizedBox(width: 6),
-          Text(
-            icon == Icons.today_rounded ? 'Today' : 'Done',
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -356,10 +459,30 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: activeProject.color.withValues(alpha: 0.3)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 520;
+          final details = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                '${activeProject.name} is filtering Tasks',
+                style: textTheme.titleSmall?.copyWith(
+                  color: activeProject.color,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'New tasks created here will default into this project until you clear the scope.',
+                style: textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          );
+
+          final projectIcon = Container(
             width: 36,
             height: 36,
             decoration: BoxDecoration(
@@ -367,35 +490,50 @@ class _TaskKanbanScreenState extends State<TaskKanbanScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(activeProject.icon, color: activeProject.color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  '${activeProject.name} is filtering Tasks',
-                  style: textTheme.titleSmall?.copyWith(
-                    color: activeProject.color,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'New tasks created here will default into this project until you clear the scope.',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
+          );
+
+          final clearButton = TextButton(
             key: const ValueKey<String>('kanban-clear-project-scope'),
             onPressed: () => projectState.setActiveProject(null),
             child: const Text('Show all'),
-          ),
-        ],
+          );
+
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    projectIcon,
+                    const SizedBox(width: 12),
+                    Expanded(child: details),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                clearButton,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    projectIcon,
+                    const SizedBox(width: 12),
+                    Expanded(child: details),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              clearButton,
+            ],
+          );
+        },
       ),
     );
   }
