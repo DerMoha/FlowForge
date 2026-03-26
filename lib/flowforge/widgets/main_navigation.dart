@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../state/app_state.dart';
-import '../utils/date_helpers.dart';
-import 'ambient_gradient_background.dart';
 import 'calm_scaffold.dart';
 import 'task_kanban_screen.dart';
 import 'workspace_hub.dart';
@@ -24,30 +22,48 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  void _openWorkspace(BuildContext context) {
-    openWorkspaceHub(context, widget.state);
+  void _selectDestination(int index) {
+    if (_currentIndex == index) return;
+    setState(() => _currentIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: <Widget>[
-          CalmScaffold(
-            state: widget.state,
-            onToggleTheme: widget.onToggleTheme,
-            onOpenWorkspace: () => _openWorkspace(context),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useRail = constraints.maxWidth >= 980;
+        final content = IndexedStack(
+          index: _currentIndex,
+          children: <Widget>[
+            CalmScaffold(
+              state: widget.state,
+              onToggleTheme: widget.onToggleTheme,
+            ),
+            TaskKanbanScreen(
+              state: widget.state,
+              onToggleTheme: widget.onToggleTheme,
+            ),
+            WorkspaceHubPage(state: widget.state),
+          ],
+        );
+
+        if (!useRail) {
+          return Scaffold(
+            extendBody: true,
+            body: content,
+            bottomNavigationBar: _buildBottomNav(context),
+          );
+        }
+
+        return Scaffold(
+          body: Row(
+            children: <Widget>[
+              _buildNavigationRail(context),
+              Expanded(child: content),
+            ],
           ),
-          _KanbanPage(
-            state: widget.state,
-            onToggleTheme: widget.onToggleTheme,
-            onOpenWorkspace: () => _openWorkspace(context),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNav(context),
+        );
+      },
     );
   }
 
@@ -73,14 +89,12 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         child: NavigationBar(
           selectedIndex: _currentIndex,
-          onDestinationSelected: (index) {
-            setState(() => _currentIndex = index);
-          },
+          onDestinationSelected: _selectDestination,
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
-          height: 68,
+          height: 72,
           destinations: const <NavigationDestination>[
             NavigationDestination(
               icon: Icon(Icons.center_focus_strong_outlined),
@@ -92,116 +106,76 @@ class _MainNavigationState extends State<MainNavigation> {
               selectedIcon: Icon(Icons.view_kanban_rounded),
               label: 'Tasks',
             ),
+            NavigationDestination(
+              icon: Icon(Icons.space_dashboard_outlined),
+              selectedIcon: Icon(Icons.space_dashboard_rounded),
+              label: 'Workspace',
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-class _KanbanPage extends StatelessWidget {
-  const _KanbanPage({
-    required this.state,
-    required this.onToggleTheme,
-    required this.onOpenWorkspace,
-  });
-
-  final FlowForgeState state;
-  final VoidCallback onToggleTheme;
-  final VoidCallback onOpenWorkspace;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildNavigationRail(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return AmbientGradientBackground(
-      energy: state.energy,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1080),
-            child: SizedBox(
-              width: double.infinity,
-              child: Column(
-                children: <Widget>[
-                  _buildHeader(context, scheme, textTheme, isDark),
-                  Expanded(child: TaskKanbanScreen(state: state)),
-                ],
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+      child: Padding(
+        padding: const EdgeInsets.only(right: 16),
+        child: Container(
+          width: 104,
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHigh.withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.4),
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: scheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
-            ),
+            ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(
-    BuildContext context,
-    ColorScheme scheme,
-    TextTheme textTheme,
-    bool isDark,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'FlowForge',
-                  style: textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: scheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Task board for ${formatCompactDate(DateTime.now())}',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Column(
             children: <Widget>[
-              IconButton.filledTonal(
-                tooltip: 'Open workspace',
-                onPressed: onOpenWorkspace,
-                icon: const Icon(Icons.dashboard_customize_rounded),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHigh.withValues(alpha: 0.72),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: scheme.outlineVariant.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: IconButton.filledTonal(
-                  tooltip: isDark
-                      ? 'Switch to light mode'
-                      : 'Switch to dark mode',
-                  onPressed: onToggleTheme,
-                  icon: Icon(
-                    isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                  ),
+              const SizedBox(height: 20),
+              Icon(Icons.spa_rounded, color: scheme.primary, size: 28),
+              const SizedBox(height: 12),
+              Expanded(
+                child: NavigationRail(
+                  selectedIndex: _currentIndex,
+                  onDestinationSelected: _selectDestination,
+                  backgroundColor: Colors.transparent,
+                  indicatorColor: scheme.primaryContainer,
+                  useIndicator: true,
+                  labelType: NavigationRailLabelType.all,
+                  leading: const SizedBox.shrink(),
+                  destinations: const <NavigationRailDestination>[
+                    NavigationRailDestination(
+                      icon: Icon(Icons.center_focus_strong_outlined),
+                      selectedIcon: Icon(Icons.center_focus_strong_rounded),
+                      label: Text('Focus'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.view_kanban_outlined),
+                      selectedIcon: Icon(Icons.view_kanban_rounded),
+                      label: Text('Tasks'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.space_dashboard_outlined),
+                      selectedIcon: Icon(Icons.space_dashboard_rounded),
+                      label: Text('Workspace'),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
