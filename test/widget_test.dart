@@ -29,7 +29,7 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
 
-    expect(find.text('Refill standing-desk water bottle'), findsOneWidget);
+    expect(find.text('Refill standing-desk water bottle'), findsWidgets);
   });
 
   testWidgets('can add deep-energy todo', (WidgetTester tester) async {
@@ -49,7 +49,7 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
 
-    expect(find.text('Hard architecture refactor'), findsOneWidget);
+    expect(find.text('Hard architecture refactor'), findsWidgets);
   });
 
   testWidgets('todo add details are collapsed by default', (

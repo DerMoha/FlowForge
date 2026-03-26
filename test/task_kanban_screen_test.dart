@@ -46,7 +46,7 @@ void main() {
       ChangeNotifierProvider<ProjectState>.value(
         value: projectState,
         child: MaterialApp(
-          home: Scaffold(body: TaskKanbanScreen(state: appState)),
+          home: TaskKanbanScreen(state: appState, onToggleTheme: () {}),
         ),
       ),
     );
