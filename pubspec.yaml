@@ -1,0 +1,10 @@
+name: studyforge_workspace
+publish_to: 'none'
+
+environment:
+  sdk: ^3.10.7
+
+workspace:
+  - apps/flowforge
+  - apps/ai_tutor
+  - packages/shared_core

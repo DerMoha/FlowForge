@@ -1,0 +1,15 @@
+name: studyforge
+packages:
+  - apps/*
+  - packages/*
+
+scripts:
+  analyze:
+    exec: flutter analyze
+    description: Run flutter analyze in all packages
+  test:
+    exec: flutter test
+    description: Run tests in all packages
+  clean:
+    exec: flutter clean
+    description: Clean all packages
