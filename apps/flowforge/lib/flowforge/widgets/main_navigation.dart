@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import 'calm_scaffold.dart';
 import 'task_kanban_screen.dart';
+import 'schedule_view.dart';
 import 'workspace_hub.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -43,6 +44,7 @@ class _MainNavigationState extends State<MainNavigation> {
               state: widget.state,
               onToggleTheme: widget.onToggleTheme,
             ),
+            const ScheduleView(),
             WorkspaceHubPage(state: widget.state),
           ],
         );
@@ -107,6 +109,11 @@ class _MainNavigationState extends State<MainNavigation> {
               label: 'Tasks',
             ),
             NavigationDestination(
+              icon: Icon(Icons.calendar_month_outlined),
+              selectedIcon: Icon(Icons.calendar_month_rounded),
+              label: 'Schedule',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.space_dashboard_outlined),
               selectedIcon: Icon(Icons.space_dashboard_rounded),
               label: 'Workspace',
@@ -164,6 +171,11 @@ class _MainNavigationState extends State<MainNavigation> {
                       icon: Icon(Icons.view_kanban_outlined),
                       selectedIcon: Icon(Icons.view_kanban_rounded),
                       label: Text('Tasks'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.calendar_month_outlined),
+                      selectedIcon: Icon(Icons.calendar_month_rounded),
+                      label: Text('Schedule'),
                     ),
                     NavigationRailDestination(
                       icon: Icon(Icons.space_dashboard_outlined),

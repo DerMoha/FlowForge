@@ -9,6 +9,7 @@ import 'state/task_state.dart';
 import 'state/profile_state.dart';
 import 'state/analytics_state.dart';
 import 'state/project_state.dart';
+import 'state/schedule_state.dart';
 import 'theme/energy_theme.dart';
 import 'widgets/main_navigation.dart';
 
@@ -67,6 +68,7 @@ class _FlowForgeAppState extends State<FlowForgeApp> {
         ChangeNotifierProvider(create: (_) => ProfileState()..init()),
         ChangeNotifierProvider(create: (_) => AnalyticsState()..init()),
         ChangeNotifierProvider(create: (_) => ProjectState()..init()),
+        ChangeNotifierProvider(create: (_) => ScheduleState()..checkAvailability()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

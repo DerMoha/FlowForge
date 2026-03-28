@@ -20,6 +20,8 @@ class TodoItem {
     this.recurrence,
     this.completedAt,
     this.actualMinutes,
+    this.scheduledStart,
+    this.scheduledCalendarUid,
   });
 
   final String id;
@@ -39,6 +41,8 @@ class TodoItem {
   final RecurrenceRule? recurrence;
   final DateTime? completedAt;
   final int? actualMinutes; // Actual time spent
+  final DateTime? scheduledStart; // Auto-scheduled start time
+  final String? scheduledCalendarUid; // Calendar event UID for scheduled block
 
   /// Is this task blocked by incomplete dependencies?
   bool isBlocked(List<TodoItem> allTodos) {
@@ -82,6 +86,10 @@ class TodoItem {
     bool clearRecurrence = false,
     bool clearCompletedAt = false,
     bool clearActualMinutes = false,
+    DateTime? scheduledStart,
+    String? scheduledCalendarUid,
+    bool clearScheduledStart = false,
+    bool clearScheduledCalendarUid = false,
   }) {
     return TodoItem(
       id: id ?? this.id,
@@ -101,6 +109,12 @@ class TodoItem {
       actualMinutes: clearActualMinutes
           ? null
           : (actualMinutes ?? this.actualMinutes),
+      scheduledStart: clearScheduledStart
+          ? null
+          : (scheduledStart ?? this.scheduledStart),
+      scheduledCalendarUid: clearScheduledCalendarUid
+          ? null
+          : (scheduledCalendarUid ?? this.scheduledCalendarUid),
     );
   }
 
@@ -121,6 +135,8 @@ class TodoItem {
       'recurrence': recurrence?.toJson(),
       'completed_at': completedAt?.toIso8601String(),
       'actual_minutes': actualMinutes,
+      'scheduled_start': scheduledStart?.toIso8601String(),
+      'scheduled_calendar_uid': scheduledCalendarUid,
     };
   }
 
@@ -172,6 +188,10 @@ class TodoItem {
           ? DateTime.tryParse(json['completed_at'] as String)
           : null,
       actualMinutes: json['actual_minutes'] as int?,
+      scheduledStart: json['scheduled_start'] != null
+          ? DateTime.tryParse(json['scheduled_start'] as String)
+          : null,
+      scheduledCalendarUid: json['scheduled_calendar_uid'] as String?,
     );
   }
 }
