@@ -16,6 +16,7 @@ class ProviderConfigState extends ChangeNotifier {
   final Map<String, AiProvider> _providers = {
     'openai': OpenAiProvider(),
     'openrouter': OpenAiProvider(providerId: 'openrouter'),
+    'minimax': OpenAiProvider(providerId: 'minimax'),
   };
 
   List<ProviderConfig> _configs = [];
@@ -45,10 +46,26 @@ class ProviderConfigState extends ChangeNotifier {
       defaultModel: 'anthropic/claude-sonnet-4',
       baseUrl: 'https://openrouter.ai/api/v1',
       models: [
+        'openrouter/free',
         'anthropic/claude-sonnet-4',
         'anthropic/claude-haiku-4',
         'google/gemini-2.5-flash',
         'openai/gpt-4o',
+      ],
+    ),
+    _ProviderTemplate(
+      id: 'minimax',
+      label: 'MiniMax',
+      defaultModel: 'MiniMax-M2.5',
+      baseUrl: 'https://api.minimax.io/v1',
+      models: [
+        'MiniMax-M2.7',
+        'MiniMax-M2.7-highspeed',
+        'MiniMax-M2.5',
+        'MiniMax-M2.5-highspeed',
+        'MiniMax-M2.1',
+        'MiniMax-M2.1-highspeed',
+        'MiniMax-M2',
       ],
     ),
   ];
