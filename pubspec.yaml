@@ -6,5 +6,4 @@ environment:
 
 workspace:
   - apps/flowforge
-  - apps/ai_tutor
   - packages/shared_core
