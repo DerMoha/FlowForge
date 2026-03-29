@@ -23,6 +23,8 @@ part 'ai_tutor_database.g.dart';
   QuizAttempts,
   StudySessions,
   TopicMasteries,
+  PracticeSessions,
+  PracticeCells,
 ])
 class AiTutorDatabase extends _$AiTutorDatabase {
   AiTutorDatabase() : super(_openConnection());
@@ -30,13 +32,19 @@ class AiTutorDatabase extends _$AiTutorDatabase {
   AiTutorDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          await m.createTable(practiceSessions);
+          await m.createTable(practiceCells);
+        }
       },
     );
   }

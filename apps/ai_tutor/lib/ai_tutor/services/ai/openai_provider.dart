@@ -174,6 +174,43 @@ class OpenAiProvider implements AiProvider {
     return message['content'] as String;
   }
 
+  @override
+  Future<String> complete(
+    ProviderRuntimeConfig config,
+    AiChatRequest request,
+  ) async {
+    final url = _baseUrl(config);
+    final messages = <Map<String, String>>[];
+
+    if (request.systemPrompt != null) {
+      messages.add({'role': 'system', 'content': request.systemPrompt!});
+    }
+    for (final msg in request.messages) {
+      messages.add({'role': msg.role, 'content': msg.content});
+    }
+
+    final response = await http.post(
+      Uri.parse('$url/chat/completions'),
+      headers: _headers(config),
+      body: jsonEncode({
+        'model': config.model,
+        'messages': messages,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Completion failed (${response.statusCode}): ${response.body}',
+      );
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final choices = json['choices'] as List;
+    final message =
+        (choices[0] as Map<String, dynamic>)['message'] as Map<String, dynamic>;
+    return message['content'] as String;
+  }
+
   String _baseUrl(ProviderRuntimeConfig config) =>
       config.baseUrl ?? 'https://api.openai.com/v1';
 

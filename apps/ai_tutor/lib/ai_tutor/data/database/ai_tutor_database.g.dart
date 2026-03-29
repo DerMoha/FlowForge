@@ -6293,6 +6293,1242 @@ class TopicMasteriesCompanion extends UpdateCompanion<TopicMastery> {
   }
 }
 
+class $PracticeSessionsTable extends PracticeSessions
+    with TableInfo<$PracticeSessionsTable, PracticeSession> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PracticeSessionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _topicMeta = const VerificationMeta('topic');
+  @override
+  late final GeneratedColumn<String> topic = GeneratedColumn<String>(
+    'topic',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceTypeMeta = const VerificationMeta(
+    'sourceType',
+  );
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+    'source_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceIdMeta = const VerificationMeta(
+    'sourceId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceId = GeneratedColumn<String>(
+    'source_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _parentSessionIdMeta = const VerificationMeta(
+    'parentSessionId',
+  );
+  @override
+  late final GeneratedColumn<String> parentSessionId = GeneratedColumn<String>(
+    'parent_session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES ai_conversations (id)',
+    ),
+  );
+  static const VerificationMeta _depthMeta = const VerificationMeta('depth');
+  @override
+  late final GeneratedColumn<int> depth = GeneratedColumn<int>(
+    'depth',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('notStarted'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    topic,
+    sourceType,
+    sourceId,
+    parentSessionId,
+    conversationId,
+    depth,
+    status,
+    createdAt,
+    updatedAt,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'practice_sessions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PracticeSession> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('topic')) {
+      context.handle(
+        _topicMeta,
+        topic.isAcceptableOrUnknown(data['topic']!, _topicMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_topicMeta);
+    }
+    if (data.containsKey('source_type')) {
+      context.handle(
+        _sourceTypeMeta,
+        sourceType.isAcceptableOrUnknown(data['source_type']!, _sourceTypeMeta),
+      );
+    }
+    if (data.containsKey('source_id')) {
+      context.handle(
+        _sourceIdMeta,
+        sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
+      );
+    }
+    if (data.containsKey('parent_session_id')) {
+      context.handle(
+        _parentSessionIdMeta,
+        parentSessionId.isAcceptableOrUnknown(
+          data['parent_session_id']!,
+          _parentSessionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('depth')) {
+      context.handle(
+        _depthMeta,
+        depth.isAcceptableOrUnknown(data['depth']!, _depthMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PracticeSession map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PracticeSession(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      topic: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic'],
+      )!,
+      sourceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_type'],
+      ),
+      sourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_id'],
+      ),
+      parentSessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_session_id'],
+      ),
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      ),
+      depth: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}depth'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+    );
+  }
+
+  @override
+  $PracticeSessionsTable createAlias(String alias) {
+    return $PracticeSessionsTable(attachedDatabase, alias);
+  }
+}
+
+class PracticeSession extends DataClass implements Insertable<PracticeSession> {
+  final String id;
+  final String topic;
+  final String? sourceType;
+  final String? sourceId;
+  final String? parentSessionId;
+  final String? conversationId;
+  final int depth;
+  final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? completedAt;
+  const PracticeSession({
+    required this.id,
+    required this.topic,
+    this.sourceType,
+    this.sourceId,
+    this.parentSessionId,
+    this.conversationId,
+    required this.depth,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['topic'] = Variable<String>(topic);
+    if (!nullToAbsent || sourceType != null) {
+      map['source_type'] = Variable<String>(sourceType);
+    }
+    if (!nullToAbsent || sourceId != null) {
+      map['source_id'] = Variable<String>(sourceId);
+    }
+    if (!nullToAbsent || parentSessionId != null) {
+      map['parent_session_id'] = Variable<String>(parentSessionId);
+    }
+    if (!nullToAbsent || conversationId != null) {
+      map['conversation_id'] = Variable<String>(conversationId);
+    }
+    map['depth'] = Variable<int>(depth);
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    return map;
+  }
+
+  PracticeSessionsCompanion toCompanion(bool nullToAbsent) {
+    return PracticeSessionsCompanion(
+      id: Value(id),
+      topic: Value(topic),
+      sourceType: sourceType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceType),
+      sourceId: sourceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceId),
+      parentSessionId: parentSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentSessionId),
+      conversationId: conversationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conversationId),
+      depth: Value(depth),
+      status: Value(status),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+    );
+  }
+
+  factory PracticeSession.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PracticeSession(
+      id: serializer.fromJson<String>(json['id']),
+      topic: serializer.fromJson<String>(json['topic']),
+      sourceType: serializer.fromJson<String?>(json['sourceType']),
+      sourceId: serializer.fromJson<String?>(json['sourceId']),
+      parentSessionId: serializer.fromJson<String?>(json['parentSessionId']),
+      conversationId: serializer.fromJson<String?>(json['conversationId']),
+      depth: serializer.fromJson<int>(json['depth']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'topic': serializer.toJson<String>(topic),
+      'sourceType': serializer.toJson<String?>(sourceType),
+      'sourceId': serializer.toJson<String?>(sourceId),
+      'parentSessionId': serializer.toJson<String?>(parentSessionId),
+      'conversationId': serializer.toJson<String?>(conversationId),
+      'depth': serializer.toJson<int>(depth),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+    };
+  }
+
+  PracticeSession copyWith({
+    String? id,
+    String? topic,
+    Value<String?> sourceType = const Value.absent(),
+    Value<String?> sourceId = const Value.absent(),
+    Value<String?> parentSessionId = const Value.absent(),
+    Value<String?> conversationId = const Value.absent(),
+    int? depth,
+    String? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> completedAt = const Value.absent(),
+  }) => PracticeSession(
+    id: id ?? this.id,
+    topic: topic ?? this.topic,
+    sourceType: sourceType.present ? sourceType.value : this.sourceType,
+    sourceId: sourceId.present ? sourceId.value : this.sourceId,
+    parentSessionId: parentSessionId.present
+        ? parentSessionId.value
+        : this.parentSessionId,
+    conversationId: conversationId.present
+        ? conversationId.value
+        : this.conversationId,
+    depth: depth ?? this.depth,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+  );
+  PracticeSession copyWithCompanion(PracticeSessionsCompanion data) {
+    return PracticeSession(
+      id: data.id.present ? data.id.value : this.id,
+      topic: data.topic.present ? data.topic.value : this.topic,
+      sourceType: data.sourceType.present
+          ? data.sourceType.value
+          : this.sourceType,
+      sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
+      parentSessionId: data.parentSessionId.present
+          ? data.parentSessionId.value
+          : this.parentSessionId,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      depth: data.depth.present ? data.depth.value : this.depth,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PracticeSession(')
+          ..write('id: $id, ')
+          ..write('topic: $topic, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('parentSessionId: $parentSessionId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('depth: $depth, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    topic,
+    sourceType,
+    sourceId,
+    parentSessionId,
+    conversationId,
+    depth,
+    status,
+    createdAt,
+    updatedAt,
+    completedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PracticeSession &&
+          other.id == this.id &&
+          other.topic == this.topic &&
+          other.sourceType == this.sourceType &&
+          other.sourceId == this.sourceId &&
+          other.parentSessionId == this.parentSessionId &&
+          other.conversationId == this.conversationId &&
+          other.depth == this.depth &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.completedAt == this.completedAt);
+}
+
+class PracticeSessionsCompanion extends UpdateCompanion<PracticeSession> {
+  final Value<String> id;
+  final Value<String> topic;
+  final Value<String?> sourceType;
+  final Value<String?> sourceId;
+  final Value<String?> parentSessionId;
+  final Value<String?> conversationId;
+  final Value<int> depth;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> completedAt;
+  final Value<int> rowid;
+  const PracticeSessionsCompanion({
+    this.id = const Value.absent(),
+    this.topic = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.sourceId = const Value.absent(),
+    this.parentSessionId = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.depth = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PracticeSessionsCompanion.insert({
+    required String id,
+    required String topic,
+    this.sourceType = const Value.absent(),
+    this.sourceId = const Value.absent(),
+    this.parentSessionId = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.depth = const Value.absent(),
+    this.status = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       topic = Value(topic),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<PracticeSession> custom({
+    Expression<String>? id,
+    Expression<String>? topic,
+    Expression<String>? sourceType,
+    Expression<String>? sourceId,
+    Expression<String>? parentSessionId,
+    Expression<String>? conversationId,
+    Expression<int>? depth,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? completedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (topic != null) 'topic': topic,
+      if (sourceType != null) 'source_type': sourceType,
+      if (sourceId != null) 'source_id': sourceId,
+      if (parentSessionId != null) 'parent_session_id': parentSessionId,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (depth != null) 'depth': depth,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PracticeSessionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? topic,
+    Value<String?>? sourceType,
+    Value<String?>? sourceId,
+    Value<String?>? parentSessionId,
+    Value<String?>? conversationId,
+    Value<int>? depth,
+    Value<String>? status,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? completedAt,
+    Value<int>? rowid,
+  }) {
+    return PracticeSessionsCompanion(
+      id: id ?? this.id,
+      topic: topic ?? this.topic,
+      sourceType: sourceType ?? this.sourceType,
+      sourceId: sourceId ?? this.sourceId,
+      parentSessionId: parentSessionId ?? this.parentSessionId,
+      conversationId: conversationId ?? this.conversationId,
+      depth: depth ?? this.depth,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      completedAt: completedAt ?? this.completedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (topic.present) {
+      map['topic'] = Variable<String>(topic.value);
+    }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
+    if (sourceId.present) {
+      map['source_id'] = Variable<String>(sourceId.value);
+    }
+    if (parentSessionId.present) {
+      map['parent_session_id'] = Variable<String>(parentSessionId.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (depth.present) {
+      map['depth'] = Variable<int>(depth.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PracticeSessionsCompanion(')
+          ..write('id: $id, ')
+          ..write('topic: $topic, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('parentSessionId: $parentSessionId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('depth: $depth, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PracticeCellsTable extends PracticeCells
+    with TableInfo<$PracticeCellsTable, PracticeCell> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PracticeCellsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES practice_sessions (id)',
+    ),
+  );
+  static const VerificationMeta _cellIndexMeta = const VerificationMeta(
+    'cellIndex',
+  );
+  @override
+  late final GeneratedColumn<int> cellIndex = GeneratedColumn<int>(
+    'cell_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cellTypeMeta = const VerificationMeta(
+    'cellType',
+  );
+  @override
+  late final GeneratedColumn<String> cellType = GeneratedColumn<String>(
+    'cell_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _metadataMeta = const VerificationMeta(
+    'metadata',
+  );
+  @override
+  late final GeneratedColumn<String> metadata = GeneratedColumn<String>(
+    'metadata',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _cellStatusMeta = const VerificationMeta(
+    'cellStatus',
+  );
+  @override
+  late final GeneratedColumn<String> cellStatus = GeneratedColumn<String>(
+    'cell_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    cellIndex,
+    cellType,
+    content,
+    metadata,
+    cellStatus,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'practice_cells';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PracticeCell> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('cell_index')) {
+      context.handle(
+        _cellIndexMeta,
+        cellIndex.isAcceptableOrUnknown(data['cell_index']!, _cellIndexMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cellIndexMeta);
+    }
+    if (data.containsKey('cell_type')) {
+      context.handle(
+        _cellTypeMeta,
+        cellType.isAcceptableOrUnknown(data['cell_type']!, _cellTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cellTypeMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('metadata')) {
+      context.handle(
+        _metadataMeta,
+        metadata.isAcceptableOrUnknown(data['metadata']!, _metadataMeta),
+      );
+    }
+    if (data.containsKey('cell_status')) {
+      context.handle(
+        _cellStatusMeta,
+        cellStatus.isAcceptableOrUnknown(data['cell_status']!, _cellStatusMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PracticeCell map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PracticeCell(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      cellIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cell_index'],
+      )!,
+      cellType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cell_type'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      metadata: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata'],
+      )!,
+      cellStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cell_status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PracticeCellsTable createAlias(String alias) {
+    return $PracticeCellsTable(attachedDatabase, alias);
+  }
+}
+
+class PracticeCell extends DataClass implements Insertable<PracticeCell> {
+  final String id;
+  final String sessionId;
+  final int cellIndex;
+  final String cellType;
+  final String content;
+  final String metadata;
+  final String cellStatus;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const PracticeCell({
+    required this.id,
+    required this.sessionId,
+    required this.cellIndex,
+    required this.cellType,
+    required this.content,
+    required this.metadata,
+    required this.cellStatus,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['cell_index'] = Variable<int>(cellIndex);
+    map['cell_type'] = Variable<String>(cellType);
+    map['content'] = Variable<String>(content);
+    map['metadata'] = Variable<String>(metadata);
+    map['cell_status'] = Variable<String>(cellStatus);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PracticeCellsCompanion toCompanion(bool nullToAbsent) {
+    return PracticeCellsCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      cellIndex: Value(cellIndex),
+      cellType: Value(cellType),
+      content: Value(content),
+      metadata: Value(metadata),
+      cellStatus: Value(cellStatus),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PracticeCell.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PracticeCell(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      cellIndex: serializer.fromJson<int>(json['cellIndex']),
+      cellType: serializer.fromJson<String>(json['cellType']),
+      content: serializer.fromJson<String>(json['content']),
+      metadata: serializer.fromJson<String>(json['metadata']),
+      cellStatus: serializer.fromJson<String>(json['cellStatus']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'cellIndex': serializer.toJson<int>(cellIndex),
+      'cellType': serializer.toJson<String>(cellType),
+      'content': serializer.toJson<String>(content),
+      'metadata': serializer.toJson<String>(metadata),
+      'cellStatus': serializer.toJson<String>(cellStatus),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PracticeCell copyWith({
+    String? id,
+    String? sessionId,
+    int? cellIndex,
+    String? cellType,
+    String? content,
+    String? metadata,
+    String? cellStatus,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => PracticeCell(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    cellIndex: cellIndex ?? this.cellIndex,
+    cellType: cellType ?? this.cellType,
+    content: content ?? this.content,
+    metadata: metadata ?? this.metadata,
+    cellStatus: cellStatus ?? this.cellStatus,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  PracticeCell copyWithCompanion(PracticeCellsCompanion data) {
+    return PracticeCell(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      cellIndex: data.cellIndex.present ? data.cellIndex.value : this.cellIndex,
+      cellType: data.cellType.present ? data.cellType.value : this.cellType,
+      content: data.content.present ? data.content.value : this.content,
+      metadata: data.metadata.present ? data.metadata.value : this.metadata,
+      cellStatus: data.cellStatus.present
+          ? data.cellStatus.value
+          : this.cellStatus,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PracticeCell(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('cellIndex: $cellIndex, ')
+          ..write('cellType: $cellType, ')
+          ..write('content: $content, ')
+          ..write('metadata: $metadata, ')
+          ..write('cellStatus: $cellStatus, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    cellIndex,
+    cellType,
+    content,
+    metadata,
+    cellStatus,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PracticeCell &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.cellIndex == this.cellIndex &&
+          other.cellType == this.cellType &&
+          other.content == this.content &&
+          other.metadata == this.metadata &&
+          other.cellStatus == this.cellStatus &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PracticeCellsCompanion extends UpdateCompanion<PracticeCell> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<int> cellIndex;
+  final Value<String> cellType;
+  final Value<String> content;
+  final Value<String> metadata;
+  final Value<String> cellStatus;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PracticeCellsCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.cellIndex = const Value.absent(),
+    this.cellType = const Value.absent(),
+    this.content = const Value.absent(),
+    this.metadata = const Value.absent(),
+    this.cellStatus = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PracticeCellsCompanion.insert({
+    required String id,
+    required String sessionId,
+    required int cellIndex,
+    required String cellType,
+    required String content,
+    this.metadata = const Value.absent(),
+    this.cellStatus = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       cellIndex = Value(cellIndex),
+       cellType = Value(cellType),
+       content = Value(content),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<PracticeCell> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<int>? cellIndex,
+    Expression<String>? cellType,
+    Expression<String>? content,
+    Expression<String>? metadata,
+    Expression<String>? cellStatus,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (cellIndex != null) 'cell_index': cellIndex,
+      if (cellType != null) 'cell_type': cellType,
+      if (content != null) 'content': content,
+      if (metadata != null) 'metadata': metadata,
+      if (cellStatus != null) 'cell_status': cellStatus,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PracticeCellsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<int>? cellIndex,
+    Value<String>? cellType,
+    Value<String>? content,
+    Value<String>? metadata,
+    Value<String>? cellStatus,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return PracticeCellsCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      cellIndex: cellIndex ?? this.cellIndex,
+      cellType: cellType ?? this.cellType,
+      content: content ?? this.content,
+      metadata: metadata ?? this.metadata,
+      cellStatus: cellStatus ?? this.cellStatus,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (cellIndex.present) {
+      map['cell_index'] = Variable<int>(cellIndex.value);
+    }
+    if (cellType.present) {
+      map['cell_type'] = Variable<String>(cellType.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (metadata.present) {
+      map['metadata'] = Variable<String>(metadata.value);
+    }
+    if (cellStatus.present) {
+      map['cell_status'] = Variable<String>(cellStatus.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PracticeCellsCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('cellIndex: $cellIndex, ')
+          ..write('cellType: $cellType, ')
+          ..write('content: $content, ')
+          ..write('metadata: $metadata, ')
+          ..write('cellStatus: $cellStatus, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AiTutorDatabase extends GeneratedDatabase {
   _$AiTutorDatabase(QueryExecutor e) : super(e);
   $AiTutorDatabaseManager get managers => $AiTutorDatabaseManager(this);
@@ -6313,6 +7549,10 @@ abstract class _$AiTutorDatabase extends GeneratedDatabase {
   late final $QuizAttemptsTable quizAttempts = $QuizAttemptsTable(this);
   late final $StudySessionsTable studySessions = $StudySessionsTable(this);
   late final $TopicMasteriesTable topicMasteries = $TopicMasteriesTable(this);
+  late final $PracticeSessionsTable practiceSessions = $PracticeSessionsTable(
+    this,
+  );
+  late final $PracticeCellsTable practiceCells = $PracticeCellsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6332,6 +7572,8 @@ abstract class _$AiTutorDatabase extends GeneratedDatabase {
     quizAttempts,
     studySessions,
     topicMasteries,
+    practiceSessions,
+    practiceCells,
   ];
 }
 
@@ -9030,6 +10272,30 @@ final class $$AiConversationsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PracticeSessionsTable, List<PracticeSession>>
+  _practiceSessionsRefsTable(_$AiTutorDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.practiceSessions,
+        aliasName: $_aliasNameGenerator(
+          db.aiConversations.id,
+          db.practiceSessions.conversationId,
+        ),
+      );
+
+  $$PracticeSessionsTableProcessedTableManager get practiceSessionsRefs {
+    final manager = $$PracticeSessionsTableTableManager(
+      $_db,
+      $_db.practiceSessions,
+    ).filter((f) => f.conversationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _practiceSessionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AiConversationsTableFilterComposer
@@ -9087,6 +10353,31 @@ class $$AiConversationsTableFilterComposer
           }) => $$AiMessagesTableFilterComposer(
             $db: $db,
             $table: $db.aiMessages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> practiceSessionsRefs(
+    Expression<bool> Function($$PracticeSessionsTableFilterComposer f) f,
+  ) {
+    final $$PracticeSessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.practiceSessions,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PracticeSessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.practiceSessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -9190,6 +10481,31 @@ class $$AiConversationsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> practiceSessionsRefs<T extends Object>(
+    Expression<T> Function($$PracticeSessionsTableAnnotationComposer a) f,
+  ) {
+    final $$PracticeSessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.practiceSessions,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PracticeSessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.practiceSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$AiConversationsTableTableManager
@@ -9205,7 +10521,10 @@ class $$AiConversationsTableTableManager
           $$AiConversationsTableUpdateCompanionBuilder,
           (AiConversation, $$AiConversationsTableReferences),
           AiConversation,
-          PrefetchHooks Function({bool aiMessagesRefs})
+          PrefetchHooks Function({
+            bool aiMessagesRefs,
+            bool practiceSessionsRefs,
+          })
         > {
   $$AiConversationsTableTableManager(
     _$AiTutorDatabase db,
@@ -9264,38 +10583,63 @@ class $$AiConversationsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({aiMessagesRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (aiMessagesRefs) db.aiMessages],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (aiMessagesRefs)
-                    await $_getPrefetchedData<
-                      AiConversation,
-                      $AiConversationsTable,
-                      AiMessage
-                    >(
-                      currentTable: table,
-                      referencedTable: $$AiConversationsTableReferences
-                          ._aiMessagesRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$AiConversationsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).aiMessagesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.conversationId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({aiMessagesRefs = false, practiceSessionsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (aiMessagesRefs) db.aiMessages,
+                    if (practiceSessionsRefs) db.practiceSessions,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (aiMessagesRefs)
+                        await $_getPrefetchedData<
+                          AiConversation,
+                          $AiConversationsTable,
+                          AiMessage
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AiConversationsTableReferences
+                              ._aiMessagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AiConversationsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).aiMessagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (practiceSessionsRefs)
+                        await $_getPrefetchedData<
+                          AiConversation,
+                          $AiConversationsTable,
+                          PracticeSession
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AiConversationsTableReferences
+                              ._practiceSessionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AiConversationsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).practiceSessionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -9312,7 +10656,7 @@ typedef $$AiConversationsTableProcessedTableManager =
       $$AiConversationsTableUpdateCompanionBuilder,
       (AiConversation, $$AiConversationsTableReferences),
       AiConversation,
-      PrefetchHooks Function({bool aiMessagesRefs})
+      PrefetchHooks Function({bool aiMessagesRefs, bool practiceSessionsRefs})
     >;
 typedef $$AiMessagesTableCreateCompanionBuilder =
     AiMessagesCompanion Function({
@@ -11208,6 +12552,965 @@ typedef $$TopicMasteriesTableProcessedTableManager =
       TopicMastery,
       PrefetchHooks Function()
     >;
+typedef $$PracticeSessionsTableCreateCompanionBuilder =
+    PracticeSessionsCompanion Function({
+      required String id,
+      required String topic,
+      Value<String?> sourceType,
+      Value<String?> sourceId,
+      Value<String?> parentSessionId,
+      Value<String?> conversationId,
+      Value<int> depth,
+      Value<String> status,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<DateTime?> completedAt,
+      Value<int> rowid,
+    });
+typedef $$PracticeSessionsTableUpdateCompanionBuilder =
+    PracticeSessionsCompanion Function({
+      Value<String> id,
+      Value<String> topic,
+      Value<String?> sourceType,
+      Value<String?> sourceId,
+      Value<String?> parentSessionId,
+      Value<String?> conversationId,
+      Value<int> depth,
+      Value<String> status,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> completedAt,
+      Value<int> rowid,
+    });
+
+final class $$PracticeSessionsTableReferences
+    extends
+        BaseReferences<
+          _$AiTutorDatabase,
+          $PracticeSessionsTable,
+          PracticeSession
+        > {
+  $$PracticeSessionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AiConversationsTable _conversationIdTable(_$AiTutorDatabase db) =>
+      db.aiConversations.createAlias(
+        $_aliasNameGenerator(
+          db.practiceSessions.conversationId,
+          db.aiConversations.id,
+        ),
+      );
+
+  $$AiConversationsTableProcessedTableManager? get conversationId {
+    final $_column = $_itemColumn<String>('conversation_id');
+    if ($_column == null) return null;
+    final manager = $$AiConversationsTableTableManager(
+      $_db,
+      $_db.aiConversations,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_conversationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$PracticeCellsTable, List<PracticeCell>>
+  _practiceCellsRefsTable(_$AiTutorDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.practiceCells,
+        aliasName: $_aliasNameGenerator(
+          db.practiceSessions.id,
+          db.practiceCells.sessionId,
+        ),
+      );
+
+  $$PracticeCellsTableProcessedTableManager get practiceCellsRefs {
+    final manager = $$PracticeCellsTableTableManager(
+      $_db,
+      $_db.practiceCells,
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_practiceCellsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PracticeSessionsTableFilterComposer
+    extends Composer<_$AiTutorDatabase, $PracticeSessionsTable> {
+  $$PracticeSessionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get topic => $composableBuilder(
+    column: $table.topic,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentSessionId => $composableBuilder(
+    column: $table.parentSessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get depth => $composableBuilder(
+    column: $table.depth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AiConversationsTableFilterComposer get conversationId {
+    final $$AiConversationsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.aiConversations,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiConversationsTableFilterComposer(
+            $db: $db,
+            $table: $db.aiConversations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> practiceCellsRefs(
+    Expression<bool> Function($$PracticeCellsTableFilterComposer f) f,
+  ) {
+    final $$PracticeCellsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.practiceCells,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PracticeCellsTableFilterComposer(
+            $db: $db,
+            $table: $db.practiceCells,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PracticeSessionsTableOrderingComposer
+    extends Composer<_$AiTutorDatabase, $PracticeSessionsTable> {
+  $$PracticeSessionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get topic => $composableBuilder(
+    column: $table.topic,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentSessionId => $composableBuilder(
+    column: $table.parentSessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get depth => $composableBuilder(
+    column: $table.depth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AiConversationsTableOrderingComposer get conversationId {
+    final $$AiConversationsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.aiConversations,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiConversationsTableOrderingComposer(
+            $db: $db,
+            $table: $db.aiConversations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PracticeSessionsTableAnnotationComposer
+    extends Composer<_$AiTutorDatabase, $PracticeSessionsTable> {
+  $$PracticeSessionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get topic =>
+      $composableBuilder(column: $table.topic, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceId =>
+      $composableBuilder(column: $table.sourceId, builder: (column) => column);
+
+  GeneratedColumn<String> get parentSessionId => $composableBuilder(
+    column: $table.parentSessionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get depth =>
+      $composableBuilder(column: $table.depth, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  $$AiConversationsTableAnnotationComposer get conversationId {
+    final $$AiConversationsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.aiConversations,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AiConversationsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.aiConversations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> practiceCellsRefs<T extends Object>(
+    Expression<T> Function($$PracticeCellsTableAnnotationComposer a) f,
+  ) {
+    final $$PracticeCellsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.practiceCells,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PracticeCellsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.practiceCells,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PracticeSessionsTableTableManager
+    extends
+        RootTableManager<
+          _$AiTutorDatabase,
+          $PracticeSessionsTable,
+          PracticeSession,
+          $$PracticeSessionsTableFilterComposer,
+          $$PracticeSessionsTableOrderingComposer,
+          $$PracticeSessionsTableAnnotationComposer,
+          $$PracticeSessionsTableCreateCompanionBuilder,
+          $$PracticeSessionsTableUpdateCompanionBuilder,
+          (PracticeSession, $$PracticeSessionsTableReferences),
+          PracticeSession,
+          PrefetchHooks Function({bool conversationId, bool practiceCellsRefs})
+        > {
+  $$PracticeSessionsTableTableManager(
+    _$AiTutorDatabase db,
+    $PracticeSessionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PracticeSessionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PracticeSessionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PracticeSessionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> topic = const Value.absent(),
+                Value<String?> sourceType = const Value.absent(),
+                Value<String?> sourceId = const Value.absent(),
+                Value<String?> parentSessionId = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                Value<int> depth = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PracticeSessionsCompanion(
+                id: id,
+                topic: topic,
+                sourceType: sourceType,
+                sourceId: sourceId,
+                parentSessionId: parentSessionId,
+                conversationId: conversationId,
+                depth: depth,
+                status: status,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String topic,
+                Value<String?> sourceType = const Value.absent(),
+                Value<String?> sourceId = const Value.absent(),
+                Value<String?> parentSessionId = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                Value<int> depth = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PracticeSessionsCompanion.insert(
+                id: id,
+                topic: topic,
+                sourceType: sourceType,
+                sourceId: sourceId,
+                parentSessionId: parentSessionId,
+                conversationId: conversationId,
+                depth: depth,
+                status: status,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PracticeSessionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({conversationId = false, practiceCellsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (practiceCellsRefs) db.practiceCells,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (conversationId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.conversationId,
+                                    referencedTable:
+                                        $$PracticeSessionsTableReferences
+                                            ._conversationIdTable(db),
+                                    referencedColumn:
+                                        $$PracticeSessionsTableReferences
+                                            ._conversationIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (practiceCellsRefs)
+                        await $_getPrefetchedData<
+                          PracticeSession,
+                          $PracticeSessionsTable,
+                          PracticeCell
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PracticeSessionsTableReferences
+                              ._practiceCellsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PracticeSessionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).practiceCellsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sessionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PracticeSessionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AiTutorDatabase,
+      $PracticeSessionsTable,
+      PracticeSession,
+      $$PracticeSessionsTableFilterComposer,
+      $$PracticeSessionsTableOrderingComposer,
+      $$PracticeSessionsTableAnnotationComposer,
+      $$PracticeSessionsTableCreateCompanionBuilder,
+      $$PracticeSessionsTableUpdateCompanionBuilder,
+      (PracticeSession, $$PracticeSessionsTableReferences),
+      PracticeSession,
+      PrefetchHooks Function({bool conversationId, bool practiceCellsRefs})
+    >;
+typedef $$PracticeCellsTableCreateCompanionBuilder =
+    PracticeCellsCompanion Function({
+      required String id,
+      required String sessionId,
+      required int cellIndex,
+      required String cellType,
+      required String content,
+      Value<String> metadata,
+      Value<String> cellStatus,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$PracticeCellsTableUpdateCompanionBuilder =
+    PracticeCellsCompanion Function({
+      Value<String> id,
+      Value<String> sessionId,
+      Value<int> cellIndex,
+      Value<String> cellType,
+      Value<String> content,
+      Value<String> metadata,
+      Value<String> cellStatus,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$PracticeCellsTableReferences
+    extends
+        BaseReferences<_$AiTutorDatabase, $PracticeCellsTable, PracticeCell> {
+  $$PracticeCellsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PracticeSessionsTable _sessionIdTable(_$AiTutorDatabase db) =>
+      db.practiceSessions.createAlias(
+        $_aliasNameGenerator(
+          db.practiceCells.sessionId,
+          db.practiceSessions.id,
+        ),
+      );
+
+  $$PracticeSessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
+
+    final manager = $$PracticeSessionsTableTableManager(
+      $_db,
+      $_db.practiceSessions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PracticeCellsTableFilterComposer
+    extends Composer<_$AiTutorDatabase, $PracticeCellsTable> {
+  $$PracticeCellsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cellIndex => $composableBuilder(
+    column: $table.cellIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cellType => $composableBuilder(
+    column: $table.cellType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadata => $composableBuilder(
+    column: $table.metadata,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cellStatus => $composableBuilder(
+    column: $table.cellStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PracticeSessionsTableFilterComposer get sessionId {
+    final $$PracticeSessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.practiceSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PracticeSessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.practiceSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PracticeCellsTableOrderingComposer
+    extends Composer<_$AiTutorDatabase, $PracticeCellsTable> {
+  $$PracticeCellsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cellIndex => $composableBuilder(
+    column: $table.cellIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cellType => $composableBuilder(
+    column: $table.cellType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metadata => $composableBuilder(
+    column: $table.metadata,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cellStatus => $composableBuilder(
+    column: $table.cellStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PracticeSessionsTableOrderingComposer get sessionId {
+    final $$PracticeSessionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.practiceSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PracticeSessionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.practiceSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PracticeCellsTableAnnotationComposer
+    extends Composer<_$AiTutorDatabase, $PracticeCellsTable> {
+  $$PracticeCellsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get cellIndex =>
+      $composableBuilder(column: $table.cellIndex, builder: (column) => column);
+
+  GeneratedColumn<String> get cellType =>
+      $composableBuilder(column: $table.cellType, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get metadata =>
+      $composableBuilder(column: $table.metadata, builder: (column) => column);
+
+  GeneratedColumn<String> get cellStatus => $composableBuilder(
+    column: $table.cellStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$PracticeSessionsTableAnnotationComposer get sessionId {
+    final $$PracticeSessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.practiceSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PracticeSessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.practiceSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PracticeCellsTableTableManager
+    extends
+        RootTableManager<
+          _$AiTutorDatabase,
+          $PracticeCellsTable,
+          PracticeCell,
+          $$PracticeCellsTableFilterComposer,
+          $$PracticeCellsTableOrderingComposer,
+          $$PracticeCellsTableAnnotationComposer,
+          $$PracticeCellsTableCreateCompanionBuilder,
+          $$PracticeCellsTableUpdateCompanionBuilder,
+          (PracticeCell, $$PracticeCellsTableReferences),
+          PracticeCell,
+          PrefetchHooks Function({bool sessionId})
+        > {
+  $$PracticeCellsTableTableManager(
+    _$AiTutorDatabase db,
+    $PracticeCellsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PracticeCellsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PracticeCellsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PracticeCellsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<int> cellIndex = const Value.absent(),
+                Value<String> cellType = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String> metadata = const Value.absent(),
+                Value<String> cellStatus = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PracticeCellsCompanion(
+                id: id,
+                sessionId: sessionId,
+                cellIndex: cellIndex,
+                cellType: cellType,
+                content: content,
+                metadata: metadata,
+                cellStatus: cellStatus,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sessionId,
+                required int cellIndex,
+                required String cellType,
+                required String content,
+                Value<String> metadata = const Value.absent(),
+                Value<String> cellStatus = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PracticeCellsCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                cellIndex: cellIndex,
+                cellType: cellType,
+                content: content,
+                metadata: metadata,
+                cellStatus: cellStatus,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PracticeCellsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({sessionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (sessionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.sessionId,
+                                referencedTable: $$PracticeCellsTableReferences
+                                    ._sessionIdTable(db),
+                                referencedColumn: $$PracticeCellsTableReferences
+                                    ._sessionIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PracticeCellsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AiTutorDatabase,
+      $PracticeCellsTable,
+      PracticeCell,
+      $$PracticeCellsTableFilterComposer,
+      $$PracticeCellsTableOrderingComposer,
+      $$PracticeCellsTableAnnotationComposer,
+      $$PracticeCellsTableCreateCompanionBuilder,
+      $$PracticeCellsTableUpdateCompanionBuilder,
+      (PracticeCell, $$PracticeCellsTableReferences),
+      PracticeCell,
+      PrefetchHooks Function({bool sessionId})
+    >;
 
 class $AiTutorDatabaseManager {
   final _$AiTutorDatabase _db;
@@ -11240,4 +13543,8 @@ class $AiTutorDatabaseManager {
       $$StudySessionsTableTableManager(_db, _db.studySessions);
   $$TopicMasteriesTableTableManager get topicMasteries =>
       $$TopicMasteriesTableTableManager(_db, _db.topicMasteries);
+  $$PracticeSessionsTableTableManager get practiceSessions =>
+      $$PracticeSessionsTableTableManager(_db, _db.practiceSessions);
+  $$PracticeCellsTableTableManager get practiceCells =>
+      $$PracticeCellsTableTableManager(_db, _db.practiceCells);
 }

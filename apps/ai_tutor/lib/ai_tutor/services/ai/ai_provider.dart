@@ -74,4 +74,11 @@ abstract class AiProvider {
     ProviderRuntimeConfig config,
     String content,
   );
+
+  /// Non-streaming single-turn completion. Returns the full response string.
+  /// Used for structured JSON responses (e.g., practice evaluation).
+  Future<String> complete(
+    ProviderRuntimeConfig config,
+    AiChatRequest request,
+  );
 }

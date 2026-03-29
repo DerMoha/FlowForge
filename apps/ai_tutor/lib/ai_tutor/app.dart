@@ -6,6 +6,7 @@ import 'data/repositories/document_repository.dart';
 import 'data/repositories/ai_repository.dart';
 import 'data/repositories/quiz_repository.dart';
 import 'data/repositories/progress_repository.dart';
+import 'data/repositories/practice_repository.dart';
 import 'services/ai/api_key_store.dart';
 import 'services/pdf_service.dart';
 import 'services/speech_service.dart';
@@ -18,6 +19,7 @@ import 'state/notebook_state.dart';
 import 'state/provider_config_state.dart';
 import 'state/quiz_state.dart';
 import 'state/progress_state.dart';
+import 'state/practice_state.dart';
 import 'state/voice_tutor_state.dart';
 import 'theme/tutor_theme.dart';
 import 'widgets/navigation/nav_shell.dart';
@@ -36,6 +38,7 @@ class _AiTutorAppState extends State<AiTutorApp> {
   late final AiRepository _aiRepo;
   late final QuizRepository _quizRepo;
   late final ProgressRepository _progressRepo;
+  late final PracticeRepository _practiceRepo;
   late final PdfService _pdfService;
   late final ApiKeyStore _apiKeyStore;
   late final SpeechService _speechService;
@@ -50,6 +53,7 @@ class _AiTutorAppState extends State<AiTutorApp> {
     _aiRepo = AiRepository(_db);
     _quizRepo = QuizRepository(_db);
     _progressRepo = ProgressRepository(_db);
+    _practiceRepo = PracticeRepository(_db);
     _pdfService = PdfService();
     _apiKeyStore = ApiKeyStore();
     _speechService = SpeechService();
@@ -118,6 +122,15 @@ class _AiTutorAppState extends State<AiTutorApp> {
             xpEventService: _xpEventService,
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => PracticeState(
+            practiceRepository: _practiceRepo,
+            aiRepository: _aiRepo,
+            progressRepository: _progressRepo,
+            apiKeyStore: _apiKeyStore,
+          ),
+        ),
+        Provider<PracticeRepository>.value(value: _practiceRepo),
         Provider<PdfService>.value(value: _pdfService),
         Provider<ApiKeyStore>.value(value: _apiKeyStore),
         Provider<SpeechService>.value(value: _speechService),

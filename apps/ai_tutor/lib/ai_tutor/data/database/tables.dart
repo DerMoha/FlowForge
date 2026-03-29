@@ -164,6 +164,45 @@ class QuizAttempts extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// ── Practice domain ──
+
+class PracticeSessions extends Table {
+  TextColumn get id => text()();
+  TextColumn get topic => text()();
+  TextColumn get sourceType => text().nullable()(); // PracticeSourceType name
+  TextColumn get sourceId => text().nullable()();
+  TextColumn get parentSessionId => text().nullable()();
+  TextColumn get conversationId =>
+      text().nullable().references(AiConversations, #id)();
+  IntColumn get depth => integer().withDefault(const Constant(0))();
+  TextColumn get status =>
+      text().withDefault(const Constant('notStarted'))(); // PracticeSessionStatus name
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class PracticeCells extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId =>
+      text().references(PracticeSessions, #id)();
+  IntColumn get cellIndex => integer()();
+  TextColumn get cellType => text()(); // PracticeCellType name
+  TextColumn get content => text()();
+  TextColumn get metadata =>
+      text().withDefault(const Constant(''))(); // JSON
+  TextColumn get cellStatus =>
+      text().withDefault(const Constant('active'))(); // CellStatus name
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // ── Progress domain ──
 
 class StudySessions extends Table {

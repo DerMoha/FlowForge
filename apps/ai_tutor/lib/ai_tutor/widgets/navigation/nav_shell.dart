@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../library/library_screen.dart';
+import '../practice/practice_list_screen.dart';
 import '../quiz/quiz_list_screen.dart';
 import '../voice/voice_tutor_screen.dart';
 import '../progress/progress_dashboard.dart';
@@ -27,6 +28,11 @@ class _NavShellState extends State<NavShell> {
       label: Text('Quizzes'),
     ),
     NavigationRailDestination(
+      icon: Icon(Icons.school_outlined),
+      selectedIcon: Icon(Icons.school),
+      label: Text('Practice'),
+    ),
+    NavigationRailDestination(
       icon: Icon(Icons.record_voice_over_outlined),
       selectedIcon: Icon(Icons.record_voice_over),
       label: Text('Voice'),
@@ -50,10 +56,12 @@ class _NavShellState extends State<NavShell> {
       case 1:
         return const QuizListScreen();
       case 2:
-        return const VoiceTutorScreen();
+        return const PracticeListScreen();
       case 3:
-        return const ProgressDashboard();
+        return const VoiceTutorScreen();
       case 4:
+        return const ProgressDashboard();
+      case 5:
         return const SettingsScreen();
       default:
         return const LibraryScreen();
