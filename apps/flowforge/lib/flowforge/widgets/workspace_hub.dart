@@ -57,10 +57,7 @@ class WorkspaceHubPage extends StatelessWidget {
                               child: _ProjectsSection(state: state),
                             ),
                             const SizedBox(width: 20),
-                            Expanded(
-                              flex: 6,
-                              child: _AnalyticsSection(),
-                            ),
+                            Expanded(flex: 6, child: _AnalyticsSection()),
                           ],
                         );
                       }
@@ -242,10 +239,18 @@ class _ProjectsSection extends StatelessWidget {
         final projects = projectState.projects;
 
         return _WorkspaceCard(
+          key: ValueKey<String>(
+            projectState.activeProjectId == null
+                ? 'workspace-all-projects-card'
+                : 'workspace-active-project-card',
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
                   Text(
                     'Projects',
@@ -253,11 +258,10 @@ class _ProjectsSection extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(width: 8),
                   _SectionBadge(count: projects.length),
-                  if (projectState.activeProject != null) ...<Widget>[
-                    const Spacer(),
+                  if (projectState.activeProject != null)
                     TextButton.icon(
+                      key: const ValueKey<String>('workspace-summary-show-all'),
                       onPressed: () => projectState.setActiveProject(null),
                       icon: const Icon(Icons.filter_alt_off_rounded, size: 15),
                       label: const Text('Clear focus'),
@@ -267,7 +271,6 @@ class _ProjectsSection extends StatelessWidget {
                         textStyle: textTheme.labelMedium,
                       ),
                     ),
-                  ],
                 ],
               ),
               const SizedBox(height: 12),
@@ -404,7 +407,8 @@ class _ProjectCard extends StatelessWidget {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              if ((project.description ?? '').isNotEmpty) ...<Widget>[
+                              if ((project.description ?? '')
+                                  .isNotEmpty) ...<Widget>[
                                 const SizedBox(height: 3),
                                 Text(
                                   project.description!,
@@ -667,7 +671,7 @@ class _MetaChip extends StatelessWidget {
 }
 
 class _WorkspaceCard extends StatelessWidget {
-  const _WorkspaceCard({required this.child});
+  const _WorkspaceCard({super.key, required this.child});
 
   final Widget child;
 
