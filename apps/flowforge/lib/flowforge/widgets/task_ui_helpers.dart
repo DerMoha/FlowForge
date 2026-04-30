@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/todo_item.dart';
 import '../state/project_state.dart';
+import 'flow_ui.dart';
 
 class TaskMetaChip extends StatelessWidget {
   const TaskMetaChip({
@@ -20,33 +21,7 @@ class TaskMetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 4 : 6,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.22 : 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: compact ? 12 : 14, color: color),
-          SizedBox(width: compact ? 4 : 5),
-          Text(
-            text,
-            style: textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
+    return FlowMetaChip(icon: icon, label: text, color: color, filled: true);
   }
 }
 
@@ -86,29 +61,11 @@ class TaskProjectBadge extends StatelessWidget {
           );
         }
 
-        return Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 8 : 10,
-            vertical: compact ? 4 : 6,
-          ),
-          decoration: BoxDecoration(
-            color: project.color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(project.icon, size: compact ? 12 : 14, color: project.color),
-              const SizedBox(width: 5),
-              Text(
-                project.name,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: project.color,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
+        return FlowMetaChip(
+          icon: project.icon,
+          label: project.name,
+          color: project.color,
+          filled: true,
         );
       },
     );
@@ -129,33 +86,15 @@ class TaskSheetFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    final scheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, 14, 20, bottomPadding + 20),
-      decoration: BoxDecoration(
-        color: isDark ? scheme.surfaceContainerHigh : scheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+    return FlowSheetFrame(
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Center(
-              child: Container(
-                width: 42,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 18),
-                decoration: BoxDecoration(
-                  color: scheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
             Text(
               title,
               style: textTheme.headlineSmall?.copyWith(
