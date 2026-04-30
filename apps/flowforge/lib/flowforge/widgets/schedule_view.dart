@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../state/energy_state.dart';
 import '../state/schedule_state.dart';
 import '../state/task_state.dart';
+import 'flow_ui.dart';
 
 class ScheduleView extends StatefulWidget {
   const ScheduleView({super.key});
@@ -24,320 +26,200 @@ class _ScheduleViewState extends State<ScheduleView> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final schedule = context.watch<ScheduleState>();
+    final energy = context.watch<EnergyState>().energy;
 
-    return Scaffold(
-      backgroundColor: scheme.surface,
-      appBar: AppBar(
-        title: const Text('Schedule'),
-        centerTitle: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => schedule.loadCalendarEvents(),
-            tooltip: 'Aktualisieren',
-          ),
-          IconButton(
-            icon: const Icon(Icons.auto_fix_high_rounded),
-            onPressed: schedule.isLoading ? null : () => _runAutoSchedule(),
-            tooltip: 'Auto-Schedule',
-          ),
-        ],
-      ),
-      body: Column(
+    return FlowPageScaffold(
+      energy: energy,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildDaySelector(scheme),
-          if (schedule.isLoading)
-            const LinearProgressIndicator()
-          else if (schedule.error != null)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                schedule.error!,
-                style: TextStyle(color: scheme.error),
+          _ScheduleHeader(
+            schedule: schedule,
+            onRefresh: () => schedule.loadCalendarEvents(),
+            onAutoSchedule: schedule.isLoading ? null : _runAutoSchedule,
+          ),
+          const SizedBox(height: 14),
+          _buildDaySelector(schedule),
+          if (schedule.isLoading) ...[
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(),
+          ],
+          if (schedule.error != null) ...[
+            const SizedBox(height: 12),
+            FlowScopeBanner(
+              icon: Icons.warning_amber_rounded,
+              title: 'Schedule sync needs attention',
+              message: schedule.error!,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ],
+          if (!schedule.isAvailable) ...[
+            const SizedBox(height: 12),
+            FlowScopeBanner(
+              icon: Icons.cloud_off_rounded,
+              title: 'Scheduling service unavailable',
+              message:
+                  'Start the scheduler service to preview calendar-aware task blocks.',
+              color: Theme.of(context).colorScheme.error,
+              action: TextButton(
+                onPressed: () => schedule.checkAvailability(),
+                child: const Text('Retry'),
               ),
             ),
-          if (!schedule.isAvailable)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Card(
-                color: scheme.errorContainer.withValues(alpha: 0.3),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Icon(Icons.cloud_off_rounded, color: scheme.error, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Scheduling Service nicht erreichbar',
-                          style: TextStyle(color: scheme.onErrorContainer, fontSize: 13),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => schedule.checkAvailability(),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          ],
+          if (schedule.unschedulable.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            FlowScopeBanner(
+              icon: Icons.event_busy_rounded,
+              title:
+                  '${schedule.unschedulable.length} task${schedule.unschedulable.length == 1 ? '' : 's'} need manual planning',
+              message:
+                  'There was not enough open calendar space for every task.',
+              color: Theme.of(context).colorScheme.tertiary,
             ),
-          Expanded(child: _buildTimeline(scheme, schedule)),
-          if (schedule.scheduledBlocks.isNotEmpty) _buildPreviewBar(scheme, schedule),
+          ],
+          const SizedBox(height: 14),
+          Expanded(child: _buildTimeline(schedule)),
+          if (schedule.scheduledBlocks.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _buildPreviewBar(schedule),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildDaySelector(ColorScheme scheme) {
+  Widget _buildDaySelector(ScheduleState schedule) {
     final now = DateTime.now();
-    final days = List.generate(7, (i) => DateTime(now.year, now.month, now.day + i));
+    final days = List.generate(
+      7,
+      (i) => DateTime(now.year, now.month, now.day + i),
+    );
 
-    return SizedBox(
-      height: 80,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: days.length,
-        itemBuilder: (context, i) {
-          final day = days[i];
-          final isSelected = _isSameDay(day, _selectedDay);
-          final isToday = _isSameDay(day, now);
-          final weekday = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][day.weekday - 1];
+    return FlowSurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      radius: FlowUiTokens.radiusLg,
+      child: SizedBox(
+        height: 70,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: days.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            final day = days[index];
+            final isSelected = _isSameDay(day, _selectedDay);
+            final isToday = _isSameDay(day, now);
+            final count =
+                schedule.eventsForDay(day).length +
+                schedule.blocksForDay(day).length;
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: GestureDetector(
+            return _DayChip(
+              day: day,
+              count: count,
+              isSelected: isSelected,
+              isToday: isToday,
               onTap: () => setState(() => _selectedDay = day),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 56,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? scheme.primaryContainer
-                      : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: isToday
-                      ? Border.all(color: scheme.primary, width: 2)
-                      : null,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      weekday,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isSelected ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${day.day}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? scheme.onPrimaryContainer : scheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildTimeline(ColorScheme scheme, ScheduleState schedule) {
-    final events = schedule.eventsForDay(_selectedDay);
-    final blocks = schedule.blocksForDay(_selectedDay);
-
-    // Merge and sort all items by start time
-    final items = <_TimelineItem>[];
-    for (final e in events) {
-      items.add(_TimelineItem(
-        start: e.start,
-        end: e.end,
-        title: e.summary,
-        subtitle: e.location,
-        type: e.isBlocker ? _ItemType.blocker : _ItemType.event,
-      ));
-    }
-    for (final b in blocks) {
-      items.add(_TimelineItem(
-        start: b.start,
-        end: b.end,
-        title: b.taskTitle,
-        subtitle: null,
-        type: _ItemType.scheduledTask,
-      ));
-    }
-    items.sort((a, b) => a.start.compareTo(b.start));
+  Widget _buildTimeline(ScheduleState schedule) {
+    final items = _timelineItems(schedule)
+      ..sort((a, b) => a.start.compareTo(b.start));
 
     if (items.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_available_rounded, size: 48, color: scheme.onSurfaceVariant.withValues(alpha: 0.4)),
-            const SizedBox(height: 12),
-            Text(
-              'Keine Events an diesem Tag',
-              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 15),
-            ),
-          ],
+        child: FlowEmptyState(
+          icon: Icons.event_available_rounded,
+          title: 'No events on this day',
+          message:
+              'Your calendar is clear. Use auto-schedule to turn open space into focus blocks.',
+          action: FilledButton.icon(
+            onPressed: schedule.isLoading ? null : _runAutoSchedule,
+            icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+            label: const Text('Auto-schedule'),
+          ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return ListView.separated(
+      padding: EdgeInsets.zero,
       itemCount: items.length,
-      itemBuilder: (context, i) => _buildTimelineCard(scheme, items[i]),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => _TimelineCard(item: items[index]),
     );
   }
 
-  Widget _buildTimelineCard(ColorScheme scheme, _TimelineItem item) {
-    final Color color;
-    final IconData icon;
+  List<_TimelineItem> _timelineItems(ScheduleState schedule) {
+    final items = <_TimelineItem>[];
 
-    switch (item.type) {
-      case _ItemType.event:
-        color = scheme.primary;
-        icon = Icons.event_rounded;
-      case _ItemType.blocker:
-        color = scheme.tertiary;
-        icon = Icons.directions_transit_rounded;
-      case _ItemType.scheduledTask:
-        color = scheme.secondary;
-        icon = Icons.task_alt_rounded;
+    for (final event in schedule.eventsForDay(_selectedDay)) {
+      items.add(
+        _TimelineItem(
+          start: event.start,
+          end: event.end,
+          title: event.summary,
+          subtitle: event.location,
+          type: event.isBlocker ? _ItemType.blocker : _ItemType.event,
+        ),
+      );
     }
 
-    final timeStr =
-        '${_formatTime(item.start)} – ${_formatTime(item.end)}';
-    final duration = item.end.difference(item.start).inMinutes;
+    for (final block in schedule.blocksForDay(_selectedDay)) {
+      items.add(
+        _TimelineItem(
+          start: block.start,
+          end: block.end,
+          title: block.taskTitle,
+          type: _ItemType.scheduledTask,
+        ),
+      );
+    }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 56,
-            child: Text(
-              _formatTime(item.start),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Container(
-            width: 3,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Card(
-              elevation: 0,
-              color: color.withValues(alpha: 0.08),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: color.withValues(alpha: 0.2)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Icon(icon, color: color, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.subtitle != null
-                                ? '$timeStr · ${item.subtitle}'
-                                : '$timeStr · ${duration}min',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return items;
   }
 
-  Widget _buildPreviewBar(ColorScheme scheme, ScheduleState schedule) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        border: Border(top: BorderSide(color: scheme.outlineVariant)),
-      ),
-      child: Row(
+  Widget _buildPreviewBar(ScheduleState schedule) {
+    final count = schedule.scheduledBlocks.length;
+
+    return FlowSurfaceCard(
+      radius: FlowUiTokens.radiusLg,
+      padding: const EdgeInsets.all(14),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Icon(Icons.auto_fix_high_rounded, color: scheme.primary, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '${schedule.scheduledBlocks.length} Tasks geplant',
-              style: TextStyle(fontWeight: FontWeight.w600, color: scheme.onSurface),
-            ),
+          FlowMetaChip(
+            icon: Icons.auto_fix_high_rounded,
+            label: '$count proposed task block${count == 1 ? '' : 's'}',
+            filled: true,
           ),
           TextButton(
-            onPressed: () {
-              // Clear preview
-              schedule.loadCalendarEvents();
-            },
-            child: const Text('Verwerfen'),
+            onPressed: schedule.loadCalendarEvents,
+            child: const Text('Discard'),
           ),
-          const SizedBox(width: 8),
           FilledButton.icon(
             onPressed: () async {
               final success = await schedule.acceptSchedule();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(success
-                        ? 'Schedule in Kalender geschrieben!'
-                        : 'Fehler beim Speichern'),
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    success
+                        ? 'Schedule saved to your calendar.'
+                        : 'Could not save schedule.',
                   ),
-                );
-              }
+                ),
+              );
             },
             icon: const Icon(Icons.check_rounded, size: 18),
-            label: const Text('Annehmen'),
+            label: const Text('Accept'),
           ),
         ],
       ),
@@ -350,12 +232,252 @@ class _ScheduleViewState extends State<ScheduleView> {
     await schedule.autoSchedule(tasks.todos);
   }
 
-  String _formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
-
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+class _ScheduleHeader extends StatelessWidget {
+  const _ScheduleHeader({
+    required this.schedule,
+    required this.onRefresh,
+    required this.onAutoSchedule,
+  });
+
+  final ScheduleState schedule;
+  final VoidCallback onRefresh;
+  final VoidCallback? onAutoSchedule;
+
+  @override
+  Widget build(BuildContext context) {
+    final eventCount = schedule.calendarEvents.length;
+    final previewCount = schedule.scheduledBlocks.length;
+
+    return FlowPageHeader(
+      icon: Icons.calendar_month_rounded,
+      eyebrow: 'Calendar-aware planning',
+      title: 'Schedule',
+      subtitle:
+          'Blend existing calendar events with energy-aware task blocks before committing them.',
+      badges: [
+        FlowStatPill(
+          icon: Icons.event_note_rounded,
+          label: 'events',
+          value: '$eventCount',
+        ),
+        FlowStatPill(
+          icon: Icons.task_alt_rounded,
+          label: 'preview',
+          value: '$previewCount',
+          color: Theme.of(context).colorScheme.secondary,
+        ),
+      ],
+      actions: [
+        IconButton.filledTonal(
+          onPressed: schedule.isLoading ? null : onRefresh,
+          icon: const Icon(Icons.refresh_rounded),
+          tooltip: 'Refresh calendar',
+        ),
+        FilledButton.icon(
+          onPressed: onAutoSchedule,
+          icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+          label: const Text('Auto-schedule'),
+        ),
+      ],
+    );
+  }
+}
+
+class _DayChip extends StatelessWidget {
+  const _DayChip({
+    required this.day,
+    required this.count,
+    required this.isSelected,
+    required this.isToday,
+    required this.onTap,
+  });
+
+  final DateTime day;
+  final int count;
+  final bool isSelected;
+  final bool isToday;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final weekday = const [
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun',
+    ][day.weekday - 1];
+    final accent = isSelected ? scheme.primary : scheme.onSurfaceVariant;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 66,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? scheme.primaryContainer.withValues(alpha: 0.82)
+                : scheme.surfaceContainerHighest.withValues(alpha: 0.44),
+            borderRadius: BorderRadius.circular(FlowUiTokens.radiusMd),
+            border: Border.all(
+              color: isToday || isSelected
+                  ? scheme.primary.withValues(alpha: isSelected ? 0.44 : 0.7)
+                  : scheme.outlineVariant.withValues(alpha: 0.22),
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                weekday,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                '${day.day}',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: isSelected
+                      ? scheme.onPrimaryContainer
+                      : scheme.onSurface,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: count > 0 ? accent : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimelineCard extends StatelessWidget {
+  const _TimelineCard({required this.item});
+
+  final _TimelineItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = switch (item.type) {
+      _ItemType.event => scheme.primary,
+      _ItemType.blocker => scheme.tertiary,
+      _ItemType.scheduledTask => scheme.secondary,
+    };
+    final icon = switch (item.type) {
+      _ItemType.event => Icons.event_rounded,
+      _ItemType.blocker => Icons.directions_transit_rounded,
+      _ItemType.scheduledTask => Icons.task_alt_rounded,
+    };
+    final duration = item.end.difference(item.start).inMinutes;
+    final subtitle = item.subtitle != null && item.subtitle!.trim().isNotEmpty
+        ? '${_formatTime(item.start)}-${_formatTime(item.end)} · ${item.subtitle}'
+        : '${_formatTime(item.start)}-${_formatTime(item.end)} · ${duration}min';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 52,
+          child: Text(
+            _formatTime(item.start),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        Container(
+          width: 3,
+          height: 74,
+          decoration: BoxDecoration(
+            color: accent,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.34),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FlowSurfaceCard(
+            radius: FlowUiTokens.radiusMd,
+            padding: const EdgeInsets.all(14),
+            tint: accent,
+            opacity: 0.08,
+            borderOpacity: 0.2,
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: accent, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
 

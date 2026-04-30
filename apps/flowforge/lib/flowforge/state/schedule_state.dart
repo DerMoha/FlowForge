@@ -39,7 +39,7 @@ class ScheduleState extends ChangeNotifier {
         end: end ?? DateTime.now().add(const Duration(days: 7)),
       );
     } catch (e) {
-      _error = 'Kalender konnte nicht geladen werden';
+      _error = 'Calendar could not be loaded.';
     }
 
     _isLoading = false;
@@ -56,7 +56,7 @@ class ScheduleState extends ChangeNotifier {
       // Step 1: Sync tasks
       final synced = await _api.syncTasks(tasks);
       if (!synced) {
-        _error = 'Tasks konnten nicht synchronisiert werden';
+        _error = 'Tasks could not be synced.';
         _isLoading = false;
         notifyListeners();
         return;
@@ -65,7 +65,7 @@ class ScheduleState extends ChangeNotifier {
       // Step 2: Run scheduler
       final result = await _api.runSchedule();
       if (result == null) {
-        _error = 'Scheduling fehlgeschlagen';
+        _error = 'Scheduling failed.';
         _isLoading = false;
         notifyListeners();
         return;
@@ -74,7 +74,7 @@ class ScheduleState extends ChangeNotifier {
       _scheduledBlocks = result.scheduled;
       _unschedulable = result.unschedulable;
     } catch (e) {
-      _error = 'Scheduling Fehler: $e';
+      _error = 'Scheduling error: $e';
     }
 
     _isLoading = false;
