@@ -79,8 +79,12 @@ class AnalyticsSnapshot {
       minEnergy: minEnergy ?? this.minEnergy,
       maxEnergy: maxEnergy ?? this.maxEnergy,
       energyLogs: energyLogs ?? this.energyLogs,
-      firstSessionTime: clearFirstSessionTime ? null : (firstSessionTime ?? this.firstSessionTime),
-      lastSessionTime: clearLastSessionTime ? null : (lastSessionTime ?? this.lastSessionTime),
+      firstSessionTime: clearFirstSessionTime
+          ? null
+          : (firstSessionTime ?? this.firstSessionTime),
+      lastSessionTime: clearLastSessionTime
+          ? null
+          : (lastSessionTime ?? this.lastSessionTime),
     );
   }
 
@@ -137,10 +141,7 @@ class AnalyticsSnapshot {
 
 /// Energy data point for time-series analysis
 class EnergyDataPoint {
-  const EnergyDataPoint({
-    required this.timestamp,
-    required this.energy,
-  });
+  const EnergyDataPoint({required this.timestamp, required this.energy});
 
   final DateTime timestamp;
   final int energy;
@@ -152,10 +153,7 @@ class EnergyDataPoint {
   int get dayOfWeek => timestamp.weekday;
 
   Map<String, dynamic> toJson() {
-    return {
-      'timestamp': timestamp.toIso8601String(),
-      'energy': energy,
-    };
+    return {'timestamp': timestamp.toIso8601String(), 'energy': energy};
   }
 
   factory EnergyDataPoint.fromJson(Map<String, dynamic> json) {

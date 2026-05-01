@@ -104,7 +104,8 @@ class ProfileState extends ChangeNotifier {
       _ambientVolume = prefs.getDouble('profile_ambient_volume') ?? 0.5;
       _hapticFeedbackEnabled = prefs.getBool('profile_haptic_feedback') ?? true;
       _notificationsEnabled = prefs.getBool('profile_notifications') ?? true;
-      _autoStartTimerAfterTask = prefs.getBool('profile_auto_start_timer') ?? false;
+      _autoStartTimerAfterTask =
+          prefs.getBool('profile_auto_start_timer') ?? false;
       _userName = prefs.getString('profile_user_name');
 
       notifyListeners();

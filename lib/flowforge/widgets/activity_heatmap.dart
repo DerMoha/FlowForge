@@ -31,9 +31,7 @@ class ActivityHeatmap extends StatelessWidget {
       children: <Widget>[
         Text(
           'Last 12 weeks: ${state.sessionsThisWeek} sessions this week (${state.minutesThisWeek} min).',
-          style: textTheme.bodySmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
+          style: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: 10),
         Container(
@@ -81,8 +79,7 @@ class ActivityHeatmap extends StatelessWidget {
                               scheme,
                             );
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 2),
+                              padding: const EdgeInsets.symmetric(vertical: 2),
                               child: Tooltip(
                                 message:
                                     '${formatShortDate(day.day)} · ${day.sessions} '
@@ -95,8 +92,9 @@ class ActivityHeatmap extends StatelessWidget {
                                     color: cellColor,
                                     borderRadius: BorderRadius.circular(3),
                                     border: Border.all(
-                                      color: scheme.outlineVariant
-                                          .withValues(alpha: 0.35),
+                                      color: scheme.outlineVariant.withValues(
+                                        alpha: 0.35,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -132,8 +130,11 @@ class ActivityHeatmap extends StatelessWidget {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color:
-                      _activityColorForDay(sampleSessions, maxSessions, scheme),
+                  color: _activityColorForDay(
+                    sampleSessions,
+                    maxSessions,
+                    scheme,
+                  ),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );

@@ -1,10 +1,4 @@
-enum RecurrencePattern {
-  daily,
-  weekdays,
-  weekly,
-  biweekly,
-  monthly,
-}
+enum RecurrencePattern { daily, weekdays, weekly, biweekly, monthly }
 
 extension RecurrencePatternX on RecurrencePattern {
   String get label {
@@ -64,7 +58,11 @@ class RecurrenceRule {
     }
 
     final normalizedAfter = DateTime(after.year, after.month, after.day);
-    final normalizedStart = DateTime(startDate.year, startDate.month, startDate.day);
+    final normalizedStart = DateTime(
+      startDate.year,
+      startDate.month,
+      startDate.day,
+    );
 
     if (normalizedAfter.isBefore(normalizedStart)) {
       return startDate;
@@ -96,7 +94,8 @@ class RecurrenceRule {
     var next = after.add(const Duration(days: 1));
 
     // Skip to next weekday
-    while (next.weekday == DateTime.saturday || next.weekday == DateTime.sunday) {
+    while (next.weekday == DateTime.saturday ||
+        next.weekday == DateTime.sunday) {
       next = next.add(const Duration(days: 1));
     }
 
@@ -166,7 +165,11 @@ class RecurrenceRule {
   /// Check if a date matches this recurrence pattern
   bool matches(DateTime date) {
     final normalized = DateTime(date.year, date.month, date.day);
-    final normalizedStart = DateTime(startDate.year, startDate.month, startDate.day);
+    final normalizedStart = DateTime(
+      startDate.year,
+      startDate.month,
+      startDate.day,
+    );
 
     if (normalized.isBefore(normalizedStart)) {
       return false;
@@ -181,7 +184,7 @@ class RecurrenceRule {
         return true;
       case RecurrencePattern.weekdays:
         return normalized.weekday >= DateTime.monday &&
-               normalized.weekday <= DateTime.friday;
+            normalized.weekday <= DateTime.friday;
       case RecurrencePattern.weekly:
         final days = specificDaysOfWeek ?? [startDate.weekday];
         return days.contains(normalized.weekday);
@@ -211,7 +214,9 @@ class RecurrenceRule {
       pattern: pattern ?? this.pattern,
       startDate: startDate ?? this.startDate,
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
-      specificDaysOfWeek: clearSpecificDaysOfWeek ? null : (specificDaysOfWeek ?? this.specificDaysOfWeek),
+      specificDaysOfWeek: clearSpecificDaysOfWeek
+          ? null
+          : (specificDaysOfWeek ?? this.specificDaysOfWeek),
       dayOfMonth: clearDayOfMonth ? null : (dayOfMonth ?? this.dayOfMonth),
     );
   }

@@ -39,10 +39,7 @@ class XpService {
   }
 
   /// Calculate XP earned for a focus session.
-  static int focusSessionXp({
-    required int minutes,
-    bool isDeepTask = false,
-  }) {
+  static int focusSessionXp({required int minutes, bool isDeepTask = false}) {
     final base = minutes * 2;
     final multiplier = isDeepTask ? 2.0 : 1.0;
     return (base * multiplier).round();

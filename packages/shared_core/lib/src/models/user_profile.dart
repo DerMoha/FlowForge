@@ -77,7 +77,9 @@ class UserProfile {
       unlockedAchievements: unlockedAchievements ?? this.unlockedAchievements,
       unlockedThemes: unlockedThemes ?? this.unlockedThemes,
       lifetimeStats: lifetimeStats ?? this.lifetimeStats,
-      lastSessionDate: clearLastSessionDate ? null : (lastSessionDate ?? this.lastSessionDate),
+      lastSessionDate: clearLastSessionDate
+          ? null
+          : (lastSessionDate ?? this.lastSessionDate),
     );
   }
 
@@ -100,16 +102,20 @@ class UserProfile {
       currentStreak: json['current_streak'] as int? ?? 0,
       longestStreak: json['longest_streak'] as int? ?? 0,
       streakFreezeTokens: json['streak_freeze_tokens'] as int? ?? 0,
-      unlockedAchievements: (json['unlocked_achievements'] as List<dynamic>?)
+      unlockedAchievements:
+          (json['unlocked_achievements'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      unlockedThemes: (json['unlocked_themes'] as List<dynamic>?)
+      unlockedThemes:
+          (json['unlocked_themes'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
       lifetimeStats: json['lifetime_stats'] != null
-          ? LifetimeStats.fromJson(json['lifetime_stats'] as Map<String, dynamic>)
+          ? LifetimeStats.fromJson(
+              json['lifetime_stats'] as Map<String, dynamic>,
+            )
           : const LifetimeStats(),
       lastSessionDate: json['last_session_date'] != null
           ? DateTime.tryParse(json['last_session_date'] as String)
@@ -160,8 +166,10 @@ class LifetimeStats {
       totalSessions: totalSessions ?? this.totalSessions,
       totalMinutes: totalMinutes ?? this.totalMinutes,
       totalTasksCompleted: totalTasksCompleted ?? this.totalTasksCompleted,
-      totalDeepTasksCompleted: totalDeepTasksCompleted ?? this.totalDeepTasksCompleted,
-      longestSessionMinutes: longestSessionMinutes ?? this.longestSessionMinutes,
+      totalDeepTasksCompleted:
+          totalDeepTasksCompleted ?? this.totalDeepTasksCompleted,
+      longestSessionMinutes:
+          longestSessionMinutes ?? this.longestSessionMinutes,
       perfectWeeks: perfectWeeks ?? this.perfectWeeks,
     );
   }

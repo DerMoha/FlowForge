@@ -68,7 +68,9 @@ class _FlowForgeAppState extends State<FlowForgeApp> {
         ChangeNotifierProvider(create: (_) => ProfileState()..init()),
         ChangeNotifierProvider(create: (_) => AnalyticsState()..init()),
         ChangeNotifierProvider(create: (_) => ProjectState()..init()),
-        ChangeNotifierProvider(create: (_) => ScheduleState()..checkAvailability()),
+        ChangeNotifierProvider(
+          create: (_) => ScheduleState()..checkAvailability(),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

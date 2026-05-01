@@ -61,10 +61,7 @@ class CollapsibleSection extends StatelessWidget {
           curve: Curves.easeOutCubic,
           alignment: Alignment.topCenter,
           child: expanded
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: child,
-                )
+              ? Padding(padding: const EdgeInsets.only(top: 4), child: child)
               : const SizedBox.shrink(),
         ),
       ],

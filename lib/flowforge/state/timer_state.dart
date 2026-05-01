@@ -27,7 +27,8 @@ class TimerState extends ChangeNotifier with WidgetsBindingObserver {
   bool get isRunning => _isRunning;
   List<SessionLog> get logs => List.unmodifiable(_logs);
 
-  bool get hasFocusProgress => _isRunning || _remainingSeconds != _focusMinutes * 60;
+  bool get hasFocusProgress =>
+      _isRunning || _remainingSeconds != _focusMinutes * 60;
 
   /// Get sessions this week
   int get sessionsThisWeek {
@@ -106,7 +107,8 @@ class TimerState extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     _isRunning = true;
-    _sessionEndEpochMs = DateTime.now().millisecondsSinceEpoch + (_remainingSeconds * 1000);
+    _sessionEndEpochMs =
+        DateTime.now().millisecondsSinceEpoch + (_remainingSeconds * 1000);
     notifyListeners();
     _ensureTickerRunning();
     _syncFocusSessionNotification(force: true);
@@ -283,18 +285,23 @@ class TimerState extends ChangeNotifier with WidgetsBindingObserver {
 
       // Load logs
       final logsJson = prefs.getStringList('timer_logs') ?? [];
-      _logs = logsJson.map((json) {
-        try {
-          return SessionLog.fromJson(json as dynamic);
-        } catch (_) {
-          return null;
-        }
-      }).whereType<SessionLog>().toList();
+      _logs = logsJson
+          .map((json) {
+            try {
+              return SessionLog.fromJson(json as dynamic);
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<SessionLog>()
+          .toList();
 
       // Check if session completed while away
       if (_isRunning && _sessionEndEpochMs != null) {
         final remainingFromDeadline =
-            ((_sessionEndEpochMs! - DateTime.now().millisecondsSinceEpoch) / 1000).ceil();
+            ((_sessionEndEpochMs! - DateTime.now().millisecondsSinceEpoch) /
+                    1000)
+                .ceil();
 
         if (remainingFromDeadline <= 0) {
           _isRunning = false;

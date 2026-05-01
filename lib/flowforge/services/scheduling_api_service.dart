@@ -62,8 +62,9 @@ class SchedulingApiService {
       if (start != null) params['start'] = start.toIso8601String();
       if (end != null) params['end'] = end.toIso8601String();
 
-      final uri = Uri.parse('$_baseUrl/api/calendar/events')
-          .replace(queryParameters: params.isNotEmpty ? params : null);
+      final uri = Uri.parse(
+        '$_baseUrl/api/calendar/events',
+      ).replace(queryParameters: params.isNotEmpty ? params : null);
 
       final res = await http.get(uri);
       if (res.statusCode != 200) return [];
@@ -83,9 +84,7 @@ class SchedulingApiService {
   /// Run the auto-scheduler and get a preview
   Future<ScheduleResult?> runSchedule() async {
     try {
-      final res = await http.post(
-        Uri.parse('$_baseUrl/api/schedule/run'),
-      );
+      final res = await http.post(Uri.parse('$_baseUrl/api/schedule/run'));
 
       if (res.statusCode != 200) return null;
 
@@ -100,9 +99,7 @@ class SchedulingApiService {
   /// Accept the current schedule preview (writes to Baikal)
   Future<bool> acceptSchedule() async {
     try {
-      final res = await http.post(
-        Uri.parse('$_baseUrl/api/schedule/accept'),
-      );
+      final res = await http.post(Uri.parse('$_baseUrl/api/schedule/accept'));
       return res.statusCode == 200;
     } catch (e) {
       debugPrint('SchedulingAPI acceptSchedule error: $e');
@@ -143,10 +140,7 @@ class SchedulingApiService {
 }
 
 class ScheduleResult {
-  const ScheduleResult({
-    required this.scheduled,
-    required this.unschedulable,
-  });
+  const ScheduleResult({required this.scheduled, required this.unschedulable});
 
   final List<ScheduledBlock> scheduled;
   final List<UnschedulableTask> unschedulable;

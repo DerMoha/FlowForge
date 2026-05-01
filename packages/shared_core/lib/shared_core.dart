@@ -1,5 +1,3 @@
-library shared_core;
-
 // Models
 export 'src/models/user_profile.dart';
 export 'src/models/session_log.dart';

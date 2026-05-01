@@ -13,8 +13,9 @@ class EnergyStrip extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final active = state.activeEnergyPreset;
-    final activeIndex =
-        energyPresets.indexWhere((p) => p.value == active.value);
+    final activeIndex = energyPresets.indexWhere(
+      (p) => p.value == active.value,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,9 +44,7 @@ class EnergyStrip extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           active.hint,
-          style: textTheme.bodySmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
+          style: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
       ],
     );

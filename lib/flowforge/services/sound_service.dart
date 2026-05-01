@@ -2,15 +2,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:flutter/material.dart';
 
 /// Types of ambient sounds available
-enum AmbientSound {
-  none,
-  whiteNoise,
-  brownNoise,
-  rain,
-  forest,
-  ocean,
-  cafe,
-}
+enum AmbientSound { none, whiteNoise, brownNoise, rain, forest, ocean, cafe }
 
 extension AmbientSoundX on AmbientSound {
   String get label {

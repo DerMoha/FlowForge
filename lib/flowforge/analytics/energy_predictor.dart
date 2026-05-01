@@ -73,7 +73,8 @@ class EnergyPredictor {
     }
 
     // Convert to multipliers (relative to weekly average)
-    final weeklyAverage = dayAverages.values.reduce((a, b) => a + b) / dayAverages.length;
+    final weeklyAverage =
+        dayAverages.values.reduce((a, b) => a + b) / dayAverages.length;
     final multipliers = <int, double>{};
     for (final entry in dayAverages.entries) {
       multipliers[entry.key] = entry.value / weeklyAverage;
@@ -83,13 +84,19 @@ class EnergyPredictor {
   }
 
   /// Calculate boost from recent activity
-  double _calculateRecentBoost(List<EnergyDataPoint> data, DateTime targetTime) {
+  double _calculateRecentBoost(
+    List<EnergyDataPoint> data,
+    DateTime targetTime,
+  ) {
     // Find recent data points (last 2 hours)
     final twoHoursAgo = targetTime.subtract(const Duration(hours: 2));
-    final recentPoints = data.where((point) =>
-      point.timestamp.isAfter(twoHoursAgo) &&
-      point.timestamp.isBefore(targetTime)
-    ).toList();
+    final recentPoints = data
+        .where(
+          (point) =>
+              point.timestamp.isAfter(twoHoursAgo) &&
+              point.timestamp.isBefore(targetTime),
+        )
+        .toList();
 
     if (recentPoints.isEmpty) return 0;
 
@@ -103,7 +110,9 @@ class EnergyPredictor {
 
     // Apply exponential decay (more recent = more weight)
     final decay = 0.5; // Half-life of 30 minutes
-    final timeDiff = targetTime.difference(recentPoints.last.timestamp).inMinutes;
+    final timeDiff = targetTime
+        .difference(recentPoints.last.timestamp)
+        .inMinutes;
     final weight = exp(-decay * timeDiff / 30);
 
     return momentum * weight * 0.2; // Scale down the boost
@@ -173,13 +182,17 @@ class EnergyPredictor {
     final eveningEnergy = _getAverageForTimeRange(hourlyAverages, 17, 22);
 
     // Detect patterns
-    final isMorningPerson = morningEnergy > afternoonEnergy && morningEnergy > eveningEnergy;
-    final isNightOwl = eveningEnergy > morningEnergy && eveningEnergy > afternoonEnergy;
+    final isMorningPerson =
+        morningEnergy > afternoonEnergy && morningEnergy > eveningEnergy;
+    final isNightOwl =
+        eveningEnergy > morningEnergy && eveningEnergy > afternoonEnergy;
 
     // Calculate consistency (standard deviation)
     final allValues = data.map((p) => p.energy.toDouble()).toList();
     final mean = allValues.reduce((a, b) => a + b) / allValues.length;
-    final variance = allValues.map((v) => pow(v - mean, 2)).reduce((a, b) => a + b) / allValues.length;
+    final variance =
+        allValues.map((v) => pow(v - mean, 2)).reduce((a, b) => a + b) /
+        allValues.length;
     final stdDev = sqrt(variance);
     final consistency = 1.0 - (stdDev / mean).clamp(0.0, 1.0);
 
@@ -197,7 +210,11 @@ class EnergyPredictor {
     );
   }
 
-  double _getAverageForTimeRange(Map<int, double> hourlyAverages, int startHour, int endHour) {
+  double _getAverageForTimeRange(
+    Map<int, double> hourlyAverages,
+    int startHour,
+    int endHour,
+  ) {
     final values = <double>[];
     for (var hour = startHour; hour < endHour; hour++) {
       final value = hourlyAverages[hour];
@@ -217,34 +234,34 @@ class EnergyPredictor {
     // Peak time recommendation
     final peakPeriod = _formatTimePeriod(insights.peakHour);
     recommendations.add(
-      'Your energy peaks around $peakPeriod. Schedule deep work tasks then.'
+      'Your energy peaks around $peakPeriod. Schedule deep work tasks then.',
     );
 
     // Morning person vs night owl
     if (insights.isMorningPerson) {
       recommendations.add(
-        'You\'re a morning person! Tackle your most important tasks before noon.'
+        'You\'re a morning person! Tackle your most important tasks before noon.',
       );
     } else if (insights.isNightOwl) {
       recommendations.add(
-        'You\'re a night owl! Your best work happens in the evening.'
+        'You\'re a night owl! Your best work happens in the evening.',
       );
     }
 
     // Low energy time
     final lowPeriod = _formatTimePeriod(insights.lowHour);
     recommendations.add(
-      'Energy dips around $lowPeriod. Consider a break or light tasks.'
+      'Energy dips around $lowPeriod. Consider a break or light tasks.',
     );
 
     // Consistency insight
     if (insights.consistency > 0.8) {
       recommendations.add(
-        'Your energy levels are very consistent. Great routine!'
+        'Your energy levels are very consistent. Great routine!',
       );
     } else if (insights.consistency < 0.5) {
       recommendations.add(
-        'Your energy varies significantly. Try to maintain a regular sleep schedule.'
+        'Your energy varies significantly. Try to maintain a regular sleep schedule.',
       );
     }
 
