@@ -1,6 +1,6 @@
-name: studyforge
+name: flowforge
 packages:
-  - apps/*
+  - .
   - packages/*
 
 scripts:
